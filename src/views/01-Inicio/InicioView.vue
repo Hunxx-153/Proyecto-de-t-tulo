@@ -89,17 +89,19 @@
             <div class="card-hint">Elegir tipo</div>
           </div>
 
-          <div v-if="mostrarOpcionesNuevo" class="cards cards-inline cards-inline-float">
-            <!-- Atención Abierta -->
-            <div class="card card-primary card-mini" @click="iniciarAtencionAbierta">
-              <div class="card-title">Atencion abierta</div>
-            </div>
+          <transition name="nuevo-menu">
+            <div v-if="mostrarOpcionesNuevo" class="cards cards-inline cards-inline-float">
+              <!-- Atención Abierta -->
+              <div class="card card-primary card-mini" @click="iniciarAtencionAbierta">
+                <div class="card-title">Atencion abierta</div>
+              </div>
 
-            <!-- Atención Cerrada -->
-            <div class="card card-primary card-mini" @click="iniciarAtencionCerrada">
-              <div class="card-title">Atencion cerrada</div>
+              <!-- Atención Cerrada -->
+              <div class="card card-primary card-mini" @click="iniciarAtencionCerrada">
+                <div class="card-title">Atencion cerrada</div>
+              </div>
             </div>
-          </div>
+          </transition>
         </div>
 
       </div>
@@ -156,7 +158,7 @@ function iniciarAtencionAbierta() {
 
 function iniciarAtencionCerrada() {
   // Redirigir a la siguiente vista
-  router.push('/proyectos') 
+  router.push('/prestaciones')
 }
 </script>
 
@@ -272,6 +274,20 @@ function iniciarAtencionCerrada() {
   transform: translateX(-50%);
   width: max-content;
   z-index: 2;
+}
+.nuevo-menu-enter-active,
+.nuevo-menu-leave-active {
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
+.nuevo-menu-enter-from,
+.nuevo-menu-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-8px) scale(0.98);
+}
+.nuevo-menu-enter-to,
+.nuevo-menu-leave-from {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0) scale(1);
 }
 .card-primary {
   background: $color-primario;

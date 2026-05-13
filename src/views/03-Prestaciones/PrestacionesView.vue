@@ -52,11 +52,16 @@
 
 		<main class="prestaciones-content">
 			<header class="prestaciones-header">
+				<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
 				<h2 class="section-title">Prestaciones</h2>
 				<p class="section-subtitle">Selecciona las prestaciones que se asociaran al proyecto.</p>
 			</header>
 
 			<section class="filtros-panel">
+				<div class="filtro filtro-buscar">
+					<label>Buscar</label>
+					<input v-model="filtros.texto" type="text" placeholder="Codigo o nombre" />
+				</div>
 				<div class="filtro">
 					<label>Area</label>
 					<select v-model="filtros.area">
@@ -90,7 +95,7 @@
 								<div class="prestacion-codigo">{{ prestacion.codigo_fonasa }}</div>
 								<div class="prestacion-nombre">{{ prestacion.nombre_prestacion }}</div>
 							</div>
-							<button class="accion accion-agregar" @click="agregarPrestacion(prestacion)">+</button>
+								<button class="accion accion-agregar" @click="agregarPrestacion(prestacion)"><i class="fa-solid fa-plus"></i></button>
 						</div>
 					</div>
 				</div>
@@ -104,10 +109,19 @@
 								<div class="prestacion-codigo">{{ prestacion.codigo_fonasa }}</div>
 								<div class="prestacion-nombre">{{ prestacion.nombre_prestacion }}</div>
 							</div>
-							<button class="accion accion-quitar" @click="quitarPrestacion(prestacion)">x</button>
+								<button class="accion accion-quitar" @click="quitarPrestacion(prestacion)"><i class="fa-solid fa-xmark"></i></button>
 						</div>
 					</div>
 				</div>
+			</section>
+
+			<section class="acciones-finales">
+				<div class="acciones-resumen">
+					Prestaciones seleccionadas: <b>{{ prestacionesSeleccionadas.length }}</b>
+				</div>
+				<button class="btn-confirmar" :disabled="prestacionesSeleccionadas.length === 0" @click="guardarYConfirmar">
+					Guardar y confirmar
+				</button>
 			</section>
 		</main>
 	</div>
@@ -140,10 +154,15 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+const STORAGE_KEY = 'ephdem_prestaciones_seleccionadas'
 
 const filtros = ref({
 	area: '',
+	texto: '',
 	subarea: '',
 	recinto: '',
 })
@@ -223,17 +242,39 @@ const opcionesRecinto = computed(() => {
 
 const prestacionesFiltradas = computed(() => {
 	const seleccionadasIds = new Set(seleccionadas.value.map((p) => p.id))
+	const texto = filtros.value.texto.trim().toLowerCase()
 	return prestaciones.value.filter((p) => {
 		if (seleccionadasIds.has(p.id)) return false
 		if (filtros.value.area && p.area !== filtros.value.area) return false
 		if (filtros.value.subarea && p.subarea !== filtros.value.subarea) return false
 		if (filtros.value.recinto && p.recinto !== filtros.value.recinto) return false
+		if (texto) {
+			const codigo = String(p.codigo_fonasa ?? '').toLowerCase()
+			const nombre = String(p.nombre_prestacion ?? '').toLowerCase()
+			if (!codigo.includes(texto) && !nombre.includes(texto)) return false
+		}
 		return true
 	})
 })
 
 const prestacionesSeleccionadas = computed(() => {
 	return seleccionadas.value
+})
+
+onMounted(() => {
+	const raw = localStorage.getItem(STORAGE_KEY)
+	if (!raw) return
+
+	try {
+		const guardadas = JSON.parse(raw)
+		if (!Array.isArray(guardadas)) return
+		const idsGuardados = new Set(guardadas.map((item) => item.id))
+		seleccionadas.value = prestaciones.value.filter((p) => idsGuardados.has(p.id))
+	} catch (error) {
+		localStorage.removeItem(STORAGE_KEY)
+		alert('No se pudieron cargar las prestaciones guardadas previamente.')
+		console.error('Error al leer prestaciones guardadas:', error)
+	}
 })
 
 function agregarPrestacion(prestacion) {
@@ -243,6 +284,19 @@ function agregarPrestacion(prestacion) {
 
 function quitarPrestacion(prestacion) {
 	seleccionadas.value = seleccionadas.value.filter((p) => p.id !== prestacion.id)
+}
+
+function guardarYConfirmar() {
+	if (seleccionadas.value.length === 0) {
+		alert('Debes seleccionar al menos una prestacion.')
+		return
+	}
+	localStorage.setItem(STORAGE_KEY, JSON.stringify(seleccionadas.value))
+	router.push('/parametros')
+}
+
+function volverAtras() {
+	router.back()
 }
 </script>
 
@@ -362,6 +416,23 @@ function quitarPrestacion(prestacion) {
 .prestaciones-header {
 	text-align: left;
 }
+.btn-back {
+	align-self: flex-start;
+	background: $color-primario;
+	color: $color-blanco;
+	border: 1px solid $color-primario;
+	border-radius: 999px;
+	padding: 6px 12px;
+	font-weight: 600;
+	cursor: pointer;
+	margin-bottom: 10px;
+	transition: background 0.2s ease, border 0.2s ease;
+
+	&:hover {
+		background: lighten($color-primario, 6%);
+		border-color: lighten($color-primario, 6%);
+	}
+}
 .section-title {
 	font-size: 1.6rem;
 	font-weight: 700;
@@ -375,7 +446,7 @@ function quitarPrestacion(prestacion) {
 
 .filtros-panel {
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
 	gap: 16px;
 	background: $color-blanco;
 	border-radius: 16px;
@@ -389,8 +460,19 @@ function quitarPrestacion(prestacion) {
 	gap: 6px;
 	font-weight: 600;
 	color: $color-primario;
+	max-width: 190px;
+}
+.filtro-buscar {
+	max-width: 420px;
 }
 .filtro select {
+	padding: 10px 12px;
+	border-radius: 10px;
+	border: 1px solid $color-borde;
+	font-weight: 500;
+	color: $color-texto-principal;
+}
+.filtro input {
 	padding: 10px 12px;
 	border-radius: 10px;
 	border: 1px solid $color-borde;
@@ -402,6 +484,40 @@ function quitarPrestacion(prestacion) {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
 	gap: 22px;
+}
+.acciones-finales {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	background: $color-blanco;
+	border-radius: 14px;
+	padding: 14px 18px;
+	border: 1px solid $color-borde;
+	box-shadow: 0 10px 22px $color-sombra-suave;
+}
+.acciones-resumen {
+	color: $color-texto-principal;
+	font-weight: 500;
+}
+.btn-confirmar {
+	background: $color-primario;
+	color: $color-blanco;
+	border: none;
+	border-radius: 10px;
+	padding: 10px 18px;
+	font-weight: 700;
+	cursor: pointer;
+	transition: background 0.2s ease, opacity 0.2s ease;
+
+	&:hover {
+		background: lighten($color-primario, 8%);
+	}
+
+	&:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
+	}
 }
 .prestaciones-panel {
 	background: $color-blanco;
@@ -458,12 +574,27 @@ function quitarPrestacion(prestacion) {
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 .accion-agregar {
 	background: $color-exito;
+	&:hover {
+		transform: translateY(-1px) scale(1.02);
+		box-shadow: 0 4px 8px rgba(12, 90, 45, 0.18);
+	}
+	&:active {
+		transform: scale(0.99);
+	}
 }
 .accion-quitar {
 	background: $color-peligro;
+	&:hover {
+		transform: translateY(-1px) scale(1.02);
+		box-shadow: 0 4px 8px rgba(128, 22, 22, 0.18);
+	}
+	&:active {
+		transform: scale(0.99);
+	}
 }
 .lista-vacia {
 	background: $color-claro;
@@ -520,6 +651,10 @@ function quitarPrestacion(prestacion) {
 	}
 	.prestaciones-grid {
 		grid-template-columns: 1fr;
+	}
+	.acciones-finales {
+		flex-direction: column;
+		align-items: stretch;
 	}
 }
 </style>

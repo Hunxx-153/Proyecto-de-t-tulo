@@ -52,6 +52,7 @@
 
     <main class="proyectos-content" id="PROYECTOS">
       <header class="proyectos-header">
+        <button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
         <h2 class="section-title">Mis proyectos</h2>
         <p class="section-subtitle">Visualiza y edita los proyectos asociados a tu usuario.</p>
       </header>
@@ -172,6 +173,10 @@ function verProyecto(proyecto) {
 function editarProyecto(proyecto) {
   alert(`Editando: ${proyecto.nombre_proyecto}`)
 }
+
+function volverAtras() {
+  router.back()
+}
 </script>
 
 <style lang="scss" scoped>
@@ -289,6 +294,23 @@ function editarProyecto(proyecto) {
 }
 .proyectos-header {
   text-align: left;
+}
+.btn-back {
+  align-self: flex-start;
+  background: $color-primario;
+  color: $color-blanco;
+  border: 1px solid $color-primario;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: background 0.2s ease, border 0.2s ease;
+
+  &:hover {
+    background: lighten($color-primario, 6%);
+    border-color: lighten($color-primario, 6%);
+  }
 }
 .section-title {
   font-size: 1.6rem;
