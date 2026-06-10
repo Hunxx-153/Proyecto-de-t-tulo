@@ -85,10 +85,16 @@
 				</div>
 			</section>
 
+			<div class="prestaciones-aviso" role="alert">
+				Antes de seleccionar alguna prestación de UPC ya sea de UTI o UCI, selecciona las prestaciones "Día Cama de Hospitalización Integral Adulto en Unidad de Cuidado Intensivo (U.C.I.)" o "Día Cama de Hospitalización Integral Adulto en Unidad de Tratamiento Intermedio (U.T.I.) según corresponda, para asegurar que el modelo considere correctamente los días cama asociados a estas prestaciones."
+			</div>
+
 			<section class="prestaciones-grid">
 				<div class="prestaciones-panel">
 					<div class="panel-title">Disponibles</div>
-					<div v-if="prestacionesFiltradas.length === 0" class="lista-vacia">No hay prestaciones disponibles.</div>
+					<div v-if="isLoading" class="lista-vacia">Cargando prestaciones...</div>
+					<div v-else-if="loadError" class="lista-vacia">{{ loadError }}</div>
+					<div v-else-if="prestacionesFiltradas.length === 0" class="lista-vacia">No hay prestaciones disponibles.</div>
 					<div v-else class="prestaciones-lista">
 						<div v-for="prestacion in prestacionesFiltradas" :key="prestacion.id" class="prestacion-item">
 							<div class="prestacion-info">
@@ -159,6 +165,11 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const STORAGE_KEY = 'ephdem_prestaciones_seleccionadas'
+const PRESTACIONES_URL = 'ajax/get_prestaciones.php'
+const PRESTACIONES_PRIORITARIAS = [
+	'Día Cama de Hospitalización Integral Adulto en Unidad de Cuidado Intensivo (U.C.I.)',
+	'Día Cama de Hospitalización Integral Adulto en Unidad de Tratamiento Intermedio (U.T.I.)',
+]
 
 const filtros = ref({
 	area: '',
@@ -167,58 +178,19 @@ const filtros = ref({
 	recinto: '',
 })
 
-const prestaciones = ref([
-	{
-		id: 1,
-		codigo_fonasa: '010101',
-		nombre_prestacion: 'Consulta general adulto',
-		area: 'Medicina',
-		subarea: 'Consulta',
-		recinto: 'Hospital',
-	},
-	{
-		id: 2,
-		codigo_fonasa: '010102',
-		nombre_prestacion: 'Consulta general pediatrica',
-		area: 'Medicina',
-		subarea: 'Consulta',
-		recinto: 'Hospital',
-	},
-	{
-		id: 3,
-		codigo_fonasa: '020201',
-		nombre_prestacion: 'Radiografia de torax',
-		area: 'Imagenologia',
-		subarea: 'Rayos X',
-		recinto: 'Centro',
-	},
-	{
-		id: 4,
-		codigo_fonasa: '030301',
-		nombre_prestacion: 'Ecografia abdominal',
-		area: 'Imagenologia',
-		subarea: 'Ecografia',
-		recinto: 'Centro',
-	},
-	{
-		id: 5,
-		codigo_fonasa: '040401',
-		nombre_prestacion: 'Cirugia ambulatoria menor',
-		area: 'Cirugia',
-		subarea: 'Ambulatoria',
-		recinto: 'Hospital',
-	},
-	{
-		id: 6,
-		codigo_fonasa: '050501',
-		nombre_prestacion: 'Terapia kinesiologica',
-		area: 'Rehabilitacion',
-		subarea: 'Kinesiologia',
-		recinto: 'Centro',
-	},
-])
+const prestaciones = ref([])
+const isLoading = ref(false)
+const loadError = ref('')
 
 const seleccionadas = ref([])
+
+function normalizarTexto(valor) {
+	return String(valor ?? '')
+		.normalize('NFD')
+		.replace(/[\u0300-\u036f]/g, '')
+		.toLowerCase()
+		.trim()
+}
 
 const opcionesArea = computed(() => {
 	return [...new Set(prestaciones.value.map((p) => p.area))]
@@ -254,6 +226,19 @@ const prestacionesFiltradas = computed(() => {
 			if (!codigo.includes(texto) && !nombre.includes(texto)) return false
 		}
 		return true
+	}).sort((a, b) => {
+		const prioridadA = PRESTACIONES_PRIORITARIAS.findIndex((nombre) => normalizarTexto(nombre) === normalizarTexto(a.nombre_prestacion))
+		const prioridadB = PRESTACIONES_PRIORITARIAS.findIndex((nombre) => normalizarTexto(nombre) === normalizarTexto(b.nombre_prestacion))
+
+		if (prioridadA !== prioridadB) {
+			if (prioridadA === -1) return 1
+			if (prioridadB === -1) return -1
+			return prioridadA - prioridadB
+		}
+
+		return normalizarTexto(a.nombre_prestacion).localeCompare(normalizarTexto(b.nombre_prestacion), 'es', {
+			sensitivity: 'base',
+		})
 	})
 })
 
@@ -261,7 +246,56 @@ const prestacionesSeleccionadas = computed(() => {
 	return seleccionadas.value
 })
 
-onMounted(() => {
+onMounted(async () => {
+	await cargarPrestaciones()
+	cargarSeleccionadas()
+})
+
+async function cargarPrestaciones() {
+	isLoading.value = true
+	loadError.value = ''
+
+	try {
+		const response = await fetch(PRESTACIONES_URL, {
+			method: 'GET',
+			credentials: 'same-origin',
+		})
+		if (!response.ok) {
+			throw new Error('No se pudieron cargar las prestaciones.')
+		}
+
+		const payload = await response.json()
+		if (!payload?.ok) {
+			throw new Error(payload?.error || 'Error al cargar prestaciones.')
+		}
+
+		const rawPrestaciones = Array.isArray(payload?.datos)
+			? payload.datos
+			: Array.isArray(payload?.datos?.prestaciones)
+				? payload.datos.prestaciones
+				: []
+
+		prestaciones.value = rawPrestaciones
+			.map((item) => ({
+				id: item?.id_prestacion ?? item?.id,
+				codigo_fonasa: item?.codigo_fonasa ?? '',
+				nombre_prestacion: item?.nombre_prestacion ?? '',
+				tiempo_procedimiento: item?.tiempo_procedimiento ?? item?.tiempoProcedimiento ?? '',
+				area: item?.area_hospitalaria ?? item?.area ?? '',
+				subarea: item?.subarea_hospitalaria ?? item?.subarea ?? '',
+				recinto: item?.recinto_base_id ?? item?.recinto ?? '',
+			}))
+			.filter((item) => item.id != null)
+	} catch (error) {
+		console.error('Error al cargar prestaciones:', error)
+		loadError.value = 'No se pudieron cargar las prestaciones. Intenta nuevamente.'
+		prestaciones.value = []
+	} finally {
+		isLoading.value = false
+	}
+}
+
+function cargarSeleccionadas() {
 	const raw = localStorage.getItem(STORAGE_KEY)
 	if (!raw) return
 
@@ -275,7 +309,7 @@ onMounted(() => {
 		alert('No se pudieron cargar las prestaciones guardadas previamente.')
 		console.error('Error al leer prestaciones guardadas:', error)
 	}
-})
+}
 
 function agregarPrestacion(prestacion) {
 	if (seleccionadas.value.find((p) => p.id === prestacion.id)) return
@@ -480,6 +514,17 @@ function volverAtras() {
 	color: $color-texto-principal;
 }
 
+.prestaciones-aviso {
+	background: rgba($color-primario, 0.08);
+	border: 1px solid rgba($color-primario, 0.18);
+	border-left: 4px solid $color-primario;
+	color: $color-primario;
+	border-radius: 12px;
+	padding: 14px 16px;
+	font-weight: 600;
+	line-height: 1.45;
+}
+
 .prestaciones-grid {
 	display: grid;
 	grid-template-columns: repeat(2, 1fr);
@@ -526,6 +571,8 @@ function volverAtras() {
 	border: 1px solid $color-borde;
 	box-shadow: 0 10px 22px $color-sombra-suave;
 	min-height: 360px;
+	display: flex;
+	flex-direction: column;
 }
 .panel-title {
 	font-size: 1.1rem;
@@ -537,6 +584,9 @@ function volverAtras() {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
+	max-height: min(60vh, 560px);
+	overflow-y: auto;
+	padding-right: 6px;
 }
 .prestacion-item {
 	display: flex;
@@ -549,6 +599,8 @@ function volverAtras() {
 	border: 1px solid $color-borde;
 }
 .prestacion-info {
+	flex: 1 1 auto;
+	min-width: 0;
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
@@ -562,8 +614,11 @@ function volverAtras() {
 	font-size: 0.95rem;
 	font-weight: 500;
 	color: $color-texto-principal;
+	line-height: 1.25;
+	overflow-wrap: anywhere;
 }
 .accion {
+	flex: 0 0 auto;
 	width: 34px;
 	height: 34px;
 	border-radius: 8px;

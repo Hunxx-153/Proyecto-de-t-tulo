@@ -76,8 +76,8 @@
 									<span class="info-icon" title="Numero de dias disponibles al ano para operar. En atencion cerrada normalmente 365, pero editable.">i</span>
 								</th>
 								<th>
-									Tiempo de procedimiento (hrs)
-									<span class="info-icon" title="Horas por procedimiento. Se sincroniza automaticamente con la tasa de rotacion.">i</span>
+									Tiempo de procedimiento (min)
+									<span class="info-icon" title="Minutos por procedimiento. Se sincroniza automaticamente con la tasa de rotacion.">i</span>
 								</th>
 								<th>
 									Tasa de rotacion
@@ -105,8 +105,9 @@
 								<td>
 									<input v-model.number="fila.diasAnuales" type="number" min="1" step="1" />
 								</td>
-								<td>
+								<td class="celda-tiempo-procedimiento">
 									<input v-model.number="fila.tiempoProcedimiento" type="number" min="0" step="0.1" @input="actualizarDesdeTiempo(fila)" />
+									<div class="campo-ayuda">Equivale a {{ formatearDiasEquivalentes(fila.tiempoProcedimiento) }}</div>
 								</td>
 								<td>
 									<input v-model.number="fila.tasaRotacion" type="number" min="0" step="0.01" @input="actualizarDesdeTasa(fila)" />
@@ -163,18 +164,28 @@ import { useRouter } from 'vue-router'
 const router = useRouter()
 const PRESTACIONES_STORAGE_KEY = 'ephdem_prestaciones_seleccionadas'
 const PARAMETROS_STORAGE_KEY = 'ephdem_parametros_prestaciones'
+const MINUTOS_POR_HORA = 60
+const HORAS_POR_DIA = 24
+const MINUTOS_POR_DIA = MINUTOS_POR_HORA * HORAS_POR_DIA
 
 const filas = ref([])
 
 function crearFila(prestacion, parametrosGuardados) {
+	const tiempoProcedimientoInicial =
+		parametrosGuardados?.tiempoProcedimiento ??
+		prestacion.tiempo_procedimiento ??
+		prestacion.tiempoProcedimiento ??
+		MINUTOS_POR_HORA
+	const tasaRotacionInicial = redondear(numeroSeguro(tiempoProcedimientoInicial) / MINUTOS_POR_DIA)
+
 	return {
 		id: prestacion.id,
 		codigo_fonasa: prestacion.codigo_fonasa,
 		nombre_prestacion: prestacion.nombre_prestacion,
 		demanda: parametrosGuardados?.demanda ?? 0,
 		diasAnuales: parametrosGuardados?.diasAnuales ?? 365,
-		tiempoProcedimiento: parametrosGuardados?.tiempoProcedimiento ?? 24,
-		tasaRotacion: parametrosGuardados?.tasaRotacion ?? 1,
+		tiempoProcedimiento: tiempoProcedimientoInicial,
+		tasaRotacion: parametrosGuardados?.tasaRotacion ?? tasaRotacionInicial,
 		disponibilidad: parametrosGuardados?.disponibilidad ?? 100,
 		jornadaLaboral: parametrosGuardados?.jornadaLaboral ?? 24,
 	}
@@ -188,14 +199,19 @@ function numeroSeguro(valor) {
 	return Number.isFinite(valor) ? valor : 0
 }
 
+function formatearDiasEquivalentes(minutos) {
+	const dias = redondear(numeroSeguro(minutos) / MINUTOS_POR_DIA)
+	return `${dias} día${dias === 1 ? '' : 's'}`
+}
+
 function actualizarDesdeTiempo(fila) {
 	const tiempo = numeroSeguro(fila.tiempoProcedimiento)
-	fila.tasaRotacion = redondear(tiempo / 24)
+	fila.tasaRotacion = redondear(tiempo / MINUTOS_POR_DIA)
 }
 
 function actualizarDesdeTasa(fila) {
 	const tasa = numeroSeguro(fila.tasaRotacion)
-	fila.tiempoProcedimiento = redondear(tasa * 24)
+	fila.tiempoProcedimiento = redondear(tasa * MINUTOS_POR_DIA)
 }
 
 function cargarDatos() {
@@ -424,6 +440,9 @@ onMounted(() => {
 	font-weight: 500;
 	color: $color-texto-principal;
 }
+.celda-tiempo-procedimiento {
+	padding-bottom: 18px;
+}
 .prestacion-codigo {
 	font-size: 0.85rem;
 	font-weight: 700;
@@ -433,6 +452,12 @@ onMounted(() => {
 	font-size: 0.95rem;
 	font-weight: 500;
 	color: $color-texto-principal;
+}
+.campo-ayuda {
+	display: block;
+	margin-top: 6px;
+	font-size: 0.8rem;
+	color: $color-texto-secundario;
 }
 .info-icon {
 	display: inline-flex;
