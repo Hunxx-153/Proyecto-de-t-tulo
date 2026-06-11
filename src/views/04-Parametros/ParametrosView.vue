@@ -44,16 +44,22 @@
 			<div class="hero-bg"></div>
 			<div class="hero-content">
 				<div class="hero-tag">MODULO EPHDEM</div>
-				<h1 class="hero-title">Estudio de Preinversion Hospitalaria</h1>
-				<p class="hero-sub">Configura los parametros por prestacion para calcular equipamiento medico.</p>
+				<h1 class="hero-title">Estudio de Preinversión Hospitalaria</h1>
+				<p class="hero-sub">Configura los parámetros por prestación para calcular equipamiento médico.</p>
 			</div>
 		</section>
+
+		<!-- Tooltip flotante global -->
+		<div v-if="tooltipPosicion.visible" class="tooltip-flotante" :style="{ top: tooltipPosicion.top, left: tooltipPosicion.left }">
+			<div class="tooltip-contenido">{{ tooltipPosicion.texto }}</div>
+			<div class="tooltip-flecha"></div>
+		</div>
 
 		<main class="parametros-content">
 			<header class="parametros-header">
 				<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
-				<h2 class="section-title">Parametros</h2>
-				<p class="section-subtitle">Completa las variables por prestacion seleccionada.</p>
+				<h2 class="section-title">Parámetros</h2>
+				<p class="section-subtitle">Completa las variables por prestación seleccionada.</p>
 			</header>
 
 			<section v-if="filas.length === 0" class="panel-vacio">
@@ -69,27 +75,27 @@
 								<th>Prestacion</th>
 								<th>
 									Demanda
-									<span class="info-icon" title="Cantidad de atenciones proyectadas para esta prestacion en el periodo.">i</span>
+									<span class="info-icon" :data-tooltip="infoTexts.demanda" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
 								</th>
 								<th>
 									Dias al año disponibles
-									<span class="info-icon" title="Numero de dias disponibles al ano para operar. En atencion cerrada normalmente 365, pero editable.">i</span>
+									<span class="info-icon" :data-tooltip="infoTexts.diasAnuales" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
 								</th>
 								<th>
 									Tiempo de procedimiento (min)
-									<span class="info-icon" title="Minutos por procedimiento. Se sincroniza automaticamente con la tasa de rotacion.">i</span>
+									<span class="info-icon" :data-tooltip="infoTexts.tiempoProcedimiento" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
 								</th>
 								<th>
-									Tasa de rotacion
-									<span class="info-icon" title="Cantidad de procedimientos por dia equivalente (24 hrs = 1.0). Se sincroniza con tiempo de procedimiento.">i</span>
+									Tasa de rotación
+									<span class="info-icon" :data-tooltip="infoTexts.tasaRotacion" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
 								</th>
 								<th>
 									Disponibilidad (%)
-									<span class="info-icon" title="Porcentaje de disponibilidad real del equipo para esta Prestación.">i</span>
+									<span class="info-icon" :data-tooltip="infoTexts.disponibilidad" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
 								</th>
 								<th>
 									Jornada laboral (hrs)
-									<span class="info-icon" title="Horas efectivas de operacion al dia. En atencion cerrada normalmente 24, pero editable.">i</span>
+									<span class="info-icon" :data-tooltip="infoTexts.jornadaLaboral" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
 								</th>
 							</tr>
 						</thead>
@@ -168,7 +174,32 @@ const MINUTOS_POR_HORA = 60
 const HORAS_POR_DIA = 24
 const MINUTOS_POR_DIA = MINUTOS_POR_HORA * HORAS_POR_DIA
 
+const infoTexts = {
+	demanda: 'Cantidad de atenciones proyectadas para esta prestación en el período.',
+	diasAnuales: 'Número de días disponibles al año para operar. En atención cerrada normalmente 365, pero editable.',
+	tiempoProcedimiento: 'Minutos por procedimiento. Se sincroniza automáticamente con la tasa de rotación.',
+	tasaRotacion: 'Cantidad de procedimientos por día equivalente (24 hrs = 1.0). Se sincroniza con tiempo de procedimiento.',
+	disponibilidad: 'Porcentaje de disponibilidad real del equipo para esta prestación.',
+	jornadaLaboral: 'Horas efectivas de operación al día. En atención cerrada normalmente 24, pero editable.',
+}
+
 const filas = ref([])
+const tooltipPosicion = ref({ top: '0px', left: '0px', visible: false, texto: '' })
+
+function mostrarTooltip(event) {
+	const span = event.target
+	const rect = span.getBoundingClientRect()
+	tooltipPosicion.value = {
+		top: `${rect.bottom + 8}px`,
+		left: `${rect.left}px`,
+		visible: true,
+		texto: span.getAttribute('data-tooltip'),
+	}
+}
+
+function ocultarTooltip() {
+	tooltipPosicion.value.visible = false
+}
 
 function crearFila(prestacion, parametrosGuardados) {
 	const tiempoProcedimientoInicial =
@@ -377,8 +408,8 @@ onMounted(() => {
 	transition: background 0.2s ease, border 0.2s ease;
 
 	&:hover {
-		background: lighten($color-primario, 6%);
-		border-color: lighten($color-primario, 6%);
+		background: mix($color-blanco, $color-primario, 6%);
+		border-color: mix($color-blanco, $color-primario, 6%);
 	}
 }
 .section-title {
@@ -399,6 +430,7 @@ onMounted(() => {
 	padding: 20px;
 	border: 1px solid $color-borde;
 	box-shadow: 0 10px 22px $color-sombra-suave;
+	overflow: visible;
 }
 .panel-vacio {
 	display: flex;
@@ -409,6 +441,7 @@ onMounted(() => {
 
 .tabla-scroll {
 	overflow-x: auto;
+	overflow-y: visible;
 }
 .tabla-parametros {
 	width: 100%;
@@ -472,6 +505,37 @@ onMounted(() => {
 	font-size: 0.72rem;
 	font-weight: 700;
 	cursor: help;
+}
+
+.tooltip-flotante {
+	position: fixed;
+	z-index: 10000;
+	pointer-events: none;
+}
+
+.tooltip-contenido {
+	width: 240px;
+	padding: 10px 14px;
+	background: $color-primario;
+	color: $color-blanco;
+	font-size: 0.85rem;
+	font-weight: 500;
+	border-radius: 8px;
+	text-align: center;
+	line-height: 1.5;
+	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+	word-wrap: break-word;
+}
+
+.tooltip-flecha {
+	position: absolute;
+	top: -7px;
+	left: 0;
+	width: 0;
+	height: 0;
+	border-left: 7px solid transparent;
+	border-right: 7px solid transparent;
+	border-bottom: 7px solid $color-primario;
 }
 
 .acciones-finales {

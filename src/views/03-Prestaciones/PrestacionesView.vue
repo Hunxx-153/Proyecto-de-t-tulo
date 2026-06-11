@@ -53,7 +53,31 @@
 		<main class="prestaciones-content">
 			<header class="prestaciones-header">
 				<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
-				<h2 class="section-title">Prestaciones</h2>
+				<div class="prestaciones-header-top">
+					<h2 class="section-title">Prestaciones</h2>
+					<div ref="consideracionesRef" class="consideraciones-wrapper">
+					<button
+						type="button"
+						class="consideraciones-toggle consideraciones-toggle-header"
+						:aria-expanded="mostrarConsideraciones"
+						aria-controls="consideraciones-contenido"
+						@click="mostrarConsideraciones = !mostrarConsideraciones"
+					>
+						<span class="consideraciones-icono" aria-hidden="true">
+							<i class="fa-solid fa-triangle-exclamation"></i>
+						</span>
+						<span class="consideraciones-texto">Consideraciones de uso</span>
+					</button>
+						<section class="consideraciones-panel consideraciones-panel-header" :class="{ 'is-open': mostrarConsideraciones }">
+							<div v-show="mostrarConsideraciones" id="consideraciones-contenido" class="consideraciones-contenido">
+								<ol>
+									<li>Antes de seleccionar alguna prestación de UPC ya sea de UTI o UCI, selecciona las prestaciones "Día Cama de Hospitalización Integral Adulto en Unidad de Cuidado Intensivo (U.C.I.)" o "Día Cama de Hospitalización Integral Adulto en Unidad de Tratamiento Intermedio (U.T.I.)" según corresponda, esto es necesario para que el modelo pueda calcular la catidad de módulos necesarios para la proyección.</li>
+									<li>Para el calculo es necesario indicar al sistema la demanda de "dias cama". Por lo general un dia cama UCI (5d) y UTI (8d) tienen un promedio definido. Para calcular los dias camas usa la formula (N de estancias * dias promedios), puede usar los promedios estandar o los propios de la institucion para una estimación más precisa.</li>
+								</ol>
+							</div>
+						</section>
+					</div>
+				</div>
 				<p class="section-subtitle">Selecciona las prestaciones que se asociaran al proyecto.</p>
 			</header>
 
@@ -84,10 +108,6 @@
 					</select>
 				</div>
 			</section>
-
-			<div class="prestaciones-aviso" role="alert">
-				Antes de seleccionar alguna prestación de UPC ya sea de UTI o UCI, selecciona las prestaciones "Día Cama de Hospitalización Integral Adulto en Unidad de Cuidado Intensivo (U.C.I.)" o "Día Cama de Hospitalización Integral Adulto en Unidad de Tratamiento Intermedio (U.T.I.) según corresponda, para asegurar que el modelo considere correctamente los días cama asociados a estas prestaciones."
-			</div>
 
 			<section class="prestaciones-grid">
 				<div class="prestaciones-panel">
@@ -160,7 +180,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -181,6 +201,8 @@ const filtros = ref({
 const prestaciones = ref([])
 const isLoading = ref(false)
 const loadError = ref('')
+const mostrarConsideraciones = ref(false)
+const consideracionesRef = ref(null)
 
 const seleccionadas = ref([])
 
@@ -332,6 +354,22 @@ function guardarYConfirmar() {
 function volverAtras() {
 	router.back()
 }
+
+function cerrarConsideracionesSiCorresponde(event) {
+	const contenedor = consideracionesRef.value
+	if (!contenedor) return
+	if (!mostrarConsideraciones.value) return
+	if (contenedor.contains(event.target)) return
+	mostrarConsideraciones.value = false
+}
+
+onMounted(() => {
+	document.addEventListener('pointerdown', cerrarConsideracionesSiCorresponde)
+})
+
+onBeforeUnmount(() => {
+	document.removeEventListener('pointerdown', cerrarConsideracionesSiCorresponde)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -449,6 +487,16 @@ function volverAtras() {
 }
 .prestaciones-header {
 	text-align: left;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	position: relative;
+}
+.prestaciones-header-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
 }
 .btn-back {
 	align-self: flex-start;
@@ -463,15 +511,15 @@ function volverAtras() {
 	transition: background 0.2s ease, border 0.2s ease;
 
 	&:hover {
-		background: lighten($color-primario, 6%);
-		border-color: lighten($color-primario, 6%);
+		background: mix($color-blanco, $color-primario, 6%);
+		border-color: mix($color-blanco, $color-primario, 6%);
 	}
 }
 .section-title {
 	font-size: 1.6rem;
 	font-weight: 700;
 	color: $color-primario;
-	margin: 0 0 6px 0;
+	margin: 0;
 }
 .section-subtitle {
 	margin: 0;
@@ -514,15 +562,99 @@ function volverAtras() {
 	color: $color-texto-principal;
 }
 
-.prestaciones-aviso {
-	background: rgba($color-primario, 0.08);
-	border: 1px solid rgba($color-primario, 0.18);
-	border-left: 4px solid $color-primario;
-	color: $color-primario;
-	border-radius: 12px;
+.consideraciones-wrapper {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	flex: 0 0 auto;
+}
+
+.consideraciones-panel {
+	overflow: visible;
+}
+
+.consideraciones-panel-header {
+	position: absolute;
+	top: calc(100% + 14px);
+	right: 0;
+	width: min(560px, 100vw - 32px);
+	max-width: 560px;
+	z-index: 3;
+	pointer-events: auto;
+	background: transparent;
+	backdrop-filter: none;
+	box-shadow: none;
+}
+
+.consideraciones-toggle {
+	width: auto;
+	display: flex;
+	align-items: center;
+	gap: 12px;
 	padding: 14px 16px;
+	border: none;
+	background: transparent;
+	color: #f59e0b;
+	font-weight: 700;
+	cursor: pointer;
+	text-align: left;
+	transition: background 0.2s ease;
+
+	&:hover {
+		background: rgba(204, 142, 17, 0.05);
+	}
+}
+
+.consideraciones-toggle-header {
+	padding: 10px 14px;
+	border-radius: 999px;
+	background: rgba(245, 159, 11, 0.144);
+	border: none;
+	flex: 0 0 auto;
+	white-space: nowrap;
+}
+
+.consideraciones-icono {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	border-radius: 50%;
+	background: rgba(245, 158, 11, 0.12);
+	color: #f59e0b;
+	font-size: 1.1rem;
+}
+
+.consideraciones-texto {
+	flex: 1 1 auto;
+	font-size: 1rem;
+}
+
+.consideraciones-contenido {
+	position: relative;
+	z-index: 1;
+	padding: 14px 16px 16px 16px;
+	color: #5c5957;
+	background: #fef9e7;
+	border: 1px solid #e9981e;
+	border-radius: 16px;
+	box-shadow: none;
 	font-weight: 600;
-	line-height: 1.45;
+
+	ol {
+		margin: 0;
+		padding-left: 20px;
+		display: grid;
+		gap: 10px;
+	}
+
+	li {
+		line-height: 1.5;
+		color: inherit;
+	}
 }
 
 .prestaciones-grid {
@@ -556,7 +688,7 @@ function volverAtras() {
 	transition: background 0.2s ease, opacity 0.2s ease;
 
 	&:hover {
-		background: lighten($color-primario, 8%);
+		background: mix($color-blanco, $color-primario, 8%);
 	}
 
 	&:disabled {

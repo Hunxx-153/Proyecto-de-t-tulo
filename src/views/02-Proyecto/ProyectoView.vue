@@ -308,8 +308,8 @@ function volverAtras() {
   transition: background 0.2s ease, border 0.2s ease;
 
   &:hover {
-    background: lighten($color-primario, 6%);
-    border-color: lighten($color-primario, 6%);
+    background: mix($color-blanco, $color-primario, 6%);
+    border-color: mix($color-blanco, $color-primario, 6%);
   }
 }
 .section-title {
@@ -395,7 +395,7 @@ function volverAtras() {
   transition: background 0.2s ease;
 
   &:hover {
-    background: lighten($color-primario, 8%);
+    background: mix($color-blanco, $color-primario, 8%);
   }
 }
 .btn-secondary {

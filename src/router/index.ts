@@ -15,6 +15,11 @@ const router = createRouter({
       component: () => import('@/views/02-Proyecto/ProyectoView.vue'),
     },
     {
+      path: '/crear-proyecto',
+      name: 'crear-proyecto',
+      component: () => import('@/views/02.1-CreacionProyecto/CreacionProyectoView.vue'),
+    },
+    {
       path: '/prestaciones',
       name: 'prestaciones',
       component: () => import('@/views/03-Prestaciones/PrestacionesView.vue'),
@@ -28,6 +33,11 @@ const router = createRouter({
       path: '/resultados',
       name: 'resultados',
       component: () => import('@/views/05-Resultados/ResultadosView.vue'),
+    },
+    {
+      // Redirige cualquier ruta desconocida (incluida /login) a /proyectos
+      path: '/:pathMatch(.*)*',
+      redirect: '/proyectos',
     },
   ],
 })
