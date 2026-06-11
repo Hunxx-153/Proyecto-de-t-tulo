@@ -160,7 +160,7 @@ function toggleNuevoMenu() {
 function seleccionarTipoProyecto(tipo) {
   mostrarMenuNuevo.value = false
   if (tipo === 'Atencion cerrada') {
-    router.push('/prestaciones')
+    router.push('/crear-proyecto')
     return
   }
   alert(`Nuevo proyecto: ${tipo}`)

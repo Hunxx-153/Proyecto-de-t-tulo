@@ -158,7 +158,7 @@ function iniciarAtencionAbierta() {
 
 function iniciarAtencionCerrada() {
   // Redirigir a la siguiente vista
-  router.push('/prestaciones')
+  router.push('/crear-proyecto')
 }
 </script>
 

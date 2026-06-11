@@ -1,5 +1,5 @@
 <template>
-	<div class="creacion-proyecto-layout">
+	<div class="login-layout">
 		<!-- TOP BAR 1: Logos institucionales -->
 		<div class="sigem-topbar1">
 			<div class="sigem-topbar1-center">
@@ -40,59 +40,97 @@
 			</div>
 		</nav>
 
-		<div class="creacion-proyecto-page">
+		<div class="login-page">
+			<!-- HERO: Banner con imagen de fondo -->
 			<section class="hero hero-compact">
 				<div class="hero-bg"></div>
 				<div class="hero-content">
 					<div class="hero-tag">MODULO EPHDEM</div>
 					<h1 class="hero-title">Estudio de Preinversión Hospitalaria</h1>
-					<p class="hero-sub">Crea un nuevo proyecto de estudio de preinversión hospitalaria.</p>
+					<p class="hero-sub">Accede con tu cuenta institucional para gestionar proyectos de preinversión.</p>
 				</div>
 			</section>
 
-			<main class="creacion-content">
-				<header class="creacion-header">
-					<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
-					<h2 class="section-title">Crear Proyecto</h2>
-					<p class="section-subtitle">Completa los datos del nuevo proyecto.</p>
-				</header>
+			<main class="login-content">
+				<div class="login-card">
+					<div class="login-card-header">
+						<div class="login-icon">
+							<i class="fa-solid fa-user-lock"></i>
+						</div>
+						<h2 class="login-title">Iniciar sesión</h2>
+						<p class="login-subtitle">Ingresa tus credenciales para continuar</p>
+					</div>
 
-				<section class="formulario-panel">
-					<form @submit.prevent="guardarProyecto" class="formulario">
+					<form @submit.prevent="iniciarSesion" class="login-form">
+						<!-- Email -->
 						<div class="form-group">
-							<label for="nombre-proyecto" class="form-label">Nombre del proyecto</label>
-							<input 
-								id="nombre-proyecto"
-								v-model="formulario.nombreProyecto" 
-								type="text" 
-								class="form-input" 
-								placeholder="Ingresa el nombre del proyecto"
+							<label for="login-email" class="form-label">
+								<i class="fa-solid fa-envelope"></i> Correo electrónico
+							</label>
+							<input
+								id="login-email"
+								v-model="formulario.email"
+								type="email"
+								class="form-input"
+								:class="{ 'form-input--error': errores.email }"
+								placeholder="correo@sigem-uv.cl"
+								autocomplete="email"
 								required
 							/>
+							<span v-if="errores.email" class="form-error">{{ errores.email }}</span>
 						</div>
 
-						<div class="acciones-formulario">
-							<button type="submit" class="btn-principal">Guardar</button>
-							<button type="button" class="btn-secundario" @click="cancelar">Cancelar</button>
+						<!-- Contraseña -->
+						<div class="form-group">
+							<label for="login-password" class="form-label">
+								<i class="fa-solid fa-lock"></i> Contraseña
+							</label>
+							<div class="input-password-wrapper">
+								<input
+									id="login-password"
+									v-model="formulario.password"
+									:type="mostrarPassword ? 'text' : 'password'"
+									class="form-input"
+									:class="{ 'form-input--error': errores.password }"
+									placeholder="••••••••"
+									autocomplete="current-password"
+									required
+								/>
+								<button
+									type="button"
+									class="btn-toggle-password"
+									@click="mostrarPassword = !mostrarPassword"
+									:title="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+								>
+									<i :class="mostrarPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+								</button>
+							</div>
+							<span v-if="errores.password" class="form-error">{{ errores.password }}</span>
+						</div>
+
+						<!-- Error general -->
+						<div v-if="errorGeneral" class="login-error-general">
+							<i class="fa-solid fa-circle-exclamation"></i>
+							{{ errorGeneral }}
+						</div>
+
+						<!-- Acciones -->
+						<div class="login-acciones">
+							<button
+								type="submit"
+								class="btn-ingresar"
+								:disabled="cargando"
+							>
+								<span v-if="cargando">
+									<i class="fa-solid fa-spinner fa-spin"></i> Verificando...
+								</span>
+								<span v-else>
+									Ingresar <i class="fa-solid fa-arrow-right"></i>
+								</span>
+							</button>
 						</div>
 					</form>
-				</section>
-
-			<section v-if="proyectosPrevios.length > 0" class="proyectos-panel">
-				<div class="panel-header">
-					<h3 class="panel-title">Proyectos anteriores</h3>
 				</div>
-				<div class="proyectos-table">
-					<div class="table-row table-head">
-						<div>Nombre del proyecto</div>
-						<div>Fecha de creación</div>
-					</div>
-					<div v-for="proyecto in proyectosPrevios" :key="proyecto.id" class="table-row">
-						<div class="table-name">{{ proyecto.nombre_proyecto }}</div>
-						<div>{{ proyecto.fecha_creacion }}</div>
-					</div>
-				</div>
-			</section>
 			</main>
 		</div>
 
@@ -125,90 +163,75 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
 const formulario = ref({
-	nombreProyecto: '',
+	email: '',
+	password: '',
 })
 
-const proyectosPrevios = ref([])
-
-onMounted(() => {
-	const proyectosGuardados = localStorage.getItem('ephdem_proyectos')
-	if (proyectosGuardados) {
-		proyectosPrevios.value = JSON.parse(proyectosGuardados)
-	}
+const errores = ref({
+	email: '',
+	password: '',
 })
 
-async function guardarProyecto() {
-	const { nombreProyecto } = formulario.value
+const errorGeneral = ref('')
+const cargando = ref(false)
+const mostrarPassword = ref(false)
 
-	if (!nombreProyecto.trim()) {
-		alert('Por favor, ingresa un nombre para el proyecto.')
-		return
+function validar() {
+	errores.value = { email: '', password: '' }
+	let valido = true
+
+	if (!formulario.value.email.trim()) {
+		errores.value.email = 'El correo es obligatorio.'
+		valido = false
+	} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formulario.value.email)) {
+		errores.value.email = 'Ingresa un correo válido.'
+		valido = false
 	}
 
+	if (!formulario.value.password) {
+		errores.value.password = 'La contraseña es obligatoria.'
+		valido = false
+	} else if (formulario.value.password.length < 4) {
+		errores.value.password = 'La contraseña debe tener al menos 4 caracteres.'
+		valido = false
+	}
+
+	return valido
+}
+
+async function iniciarSesion() {
+	errorGeneral.value = ''
+	if (!validar()) return
+
+	cargando.value = true
 	try {
-		const url = `${import.meta.env.VITE_API_BASE}/crear_proyecto.php`
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				nombre_proyecto: nombreProyecto,
-				tipo_proyecto: 'Atencion cerrada'
-			})
-		})
+		// Aquí irá la llamada al backend de autenticación en el futuro
+		// Por ahora simulamos un pequeño delay y redirigimos
+		await new Promise(resolve => setTimeout(resolve, 800))
 
-		const result = await response.json()
-
-		if (!response.ok || !result.ok) {
-			alert(result.error || 'Error al crear el proyecto en la base de datos.')
-			return
-		}
-
-		// Opcionalmente, guardamos también en localStorage para mantener el estado local actual
-		const nuevoProyecto = {
-			id: result.datos.id_proyecto,
-			nombre_proyecto: result.datos.nombre_proyecto,
-			fecha_creacion: new Date().toLocaleDateString('es-CL'),
-			tipo_proyecto: result.datos.tipo_proyecto,
-		}
-
-		const proyectosGuardados = localStorage.getItem('ephdem_proyectos')
-		const proyectos = proyectosGuardados ? JSON.parse(proyectosGuardados) : []
-		proyectos.push(nuevoProyecto)
-		localStorage.setItem('ephdem_proyectos', JSON.stringify(proyectos))
-
-		// Guardar el ID del proyecto activo para usarlo en las siguientes vistas
-		localStorage.setItem('ephdem_proyecto_activo', result.datos.id_proyecto)
-
-		// Redirigir a prestaciones
-		router.push('/prestaciones')
+		// Cuando se implemente: llamar a /ajax/login.php con email y password
+		// y si es exitoso, guardar sesión y navegar
+		router.push('/inicio')
 
 	} catch (error) {
-		console.error('Error al guardar:', error)
-		alert('Ocurrió un error de red al intentar comunicarse con el servidor.')
+		console.error('Error al iniciar sesión:', error)
+		errorGeneral.value = 'Error de conexión. Inténtalo nuevamente.'
+	} finally {
+		cargando.value = false
 	}
-}
-
-function cancelar() {
-	volverAtras()
-}
-
-function volverAtras() {
-	router.back()
-	setTimeout(() => {
-		window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-	}, 0)
 }
 </script>
 
 <style lang="scss" scoped>
 @import '@/assets/styles/variables';
 
+// --- SIGEM-UV TOPBAR 1 ---
 .sigem-topbar1 {
 	width: 100%;
 	background: #003c58;
@@ -216,7 +239,7 @@ function volverAtras() {
 	align-items: center;
 	justify-content: center;
 	position: relative;
-	padding: 10px 0 10px 0;
+	padding: 10px 0;
 	min-height: 56px;
 	z-index: 1001;
 }
@@ -249,6 +272,7 @@ function volverAtras() {
 	transition: none !important;
 }
 
+// --- SIGEM-UV TOPBAR 2 ---
 .sigem-topbar2 {
 	position: sticky;
 	top: 0;
@@ -258,6 +282,20 @@ function volverAtras() {
 	z-index: 1000;
 }
 
+// --- LAYOUT ---
+.login-layout {
+	min-height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+.login-page {
+	background: $color-fondo;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+// --- HERO ---
 .hero {
 	background: $color-secundario;
 	position: relative;
@@ -304,67 +342,66 @@ function volverAtras() {
 	margin: 0;
 }
 
-.creacion-proyecto-layout {
-	min-height: 100vh;
+// --- CONTENIDO LOGIN ---
+.login-content {
 	display: flex;
-	flex-direction: column;
+	justify-content: center;
+	align-items: flex-start;
+	padding: 48px 24px 72px;
+	flex: 1;
 }
 
-.creacion-proyecto-page {
-	background: $color-fondo;
-	flex: 1;
-	display: flex;
-	flex-direction: column;
-}
-.creacion-content {
+.login-card {
+	background: $color-blanco;
+	border-radius: 20px;
+	padding: 48px 44px;
+	border: 1px solid $color-borde;
+	box-shadow: 0 16px 40px $color-sombra-suave;
 	width: 100%;
-	max-width: 1100px;
-	margin: 32px auto 72px auto;
-	padding: 0 20px;
-	display: flex;
-	flex-direction: column;
-	gap: 24px;
+	max-width: 460px;
 }
-.btn-back {
-	align-self: flex-start;
-	background: $color-primario;
-	color: $color-blanco;
-	border: 1px solid $color-primario;
-	border-radius: 999px;
-	padding: 6px 12px;
-	font-weight: 600;
-	cursor: pointer;
-	margin-bottom: 10px;
-	transition: background 0.2s ease, border 0.2s ease;
+
+.login-card-header {
+	text-align: center;
+	margin-bottom: 36px;
+}
+
+.login-icon {
+	width: 64px;
+	height: 64px;
+	border-radius: 50%;
+	background: rgba($color-primario, 0.08);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin: 0 auto 20px;
+	font-size: 1.6rem;
+	color: $color-primario;
+	transition: background 0.2s;
 
 	&:hover {
-		background: mix($color-blanco, $color-primario, 6%);
-		border-color: mix($color-blanco, $color-primario, 6%);
+		background: rgba($color-primario, 0.14);
 	}
 }
-.section-title {
+
+.login-title {
 	font-size: 1.6rem;
 	font-weight: 700;
 	color: $color-primario;
-	margin: 0 0 6px 0;
+	margin: 0 0 6px;
 }
-.section-subtitle {
-	margin: 0;
+
+.login-subtitle {
+	font-size: 0.95rem;
 	color: $color-texto-secundario;
+	margin: 0;
 }
 
-.formulario-panel {
-	background: $color-blanco;
-	border-radius: 16px;
-	padding: 32px;
-	border: 1px solid $color-borde;
-	box-shadow: 0 10px 22px $color-sombra-suave;
-}
-
-.formulario {
+// --- FORMULARIO ---
+.login-form {
 	display: flex;
 	flex-direction: column;
-	gap: 24px;
+	gap: 22px;
 }
 
 .form-group {
@@ -374,19 +411,29 @@ function volverAtras() {
 }
 
 .form-label {
-	font-size: 1rem;
+	font-size: 0.9rem;
 	font-weight: 600;
 	color: $color-primario;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+
+	i {
+		font-size: 0.85rem;
+		opacity: 0.7;
+	}
 }
 
 .form-input {
-	padding: 12px 14px;
-	border: 1px solid $color-borde;
-	border-radius: 8px;
+	padding: 13px 16px;
+	border: 1.5px solid $color-borde;
+	border-radius: 10px;
 	font-size: 1rem;
 	color: $color-texto-principal;
 	font-weight: 500;
 	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	background: $color-blanco;
+	width: 100%;
 
 	&:focus {
 		outline: none;
@@ -396,51 +443,105 @@ function volverAtras() {
 
 	&::placeholder {
 		color: $color-texto-secundario;
+		opacity: 0.6;
+	}
+
+	&--error {
+		border-color: #e53935;
+		&:focus {
+			box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.12);
+		}
 	}
 }
 
-.acciones-formulario {
-	display: flex;
-	gap: 12px;
-	justify-content: flex-end;
-	margin-top: 12px;
+.input-password-wrapper {
+	position: relative;
+
+	.form-input {
+		padding-right: 50px;
+	}
 }
 
-.btn-principal,
-.btn-secundario {
+.btn-toggle-password {
+	position: absolute;
+	right: 14px;
+	top: 50%;
+	transform: translateY(-50%);
+	background: none;
 	border: none;
-	border-radius: 10px;
-	padding: 10px 24px;
-	font-weight: 700;
+	color: $color-texto-secundario;
 	cursor: pointer;
-	transition: all 0.2s ease;
+	padding: 4px;
+	font-size: 1rem;
+	transition: color 0.2s;
+
+	&:hover {
+		color: $color-primario;
+	}
 }
 
-.btn-principal {
+.form-error {
+	font-size: 0.82rem;
+	color: #e53935;
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.login-error-general {
+	background: rgba(229, 57, 53, 0.07);
+	border: 1px solid rgba(229, 57, 53, 0.25);
+	border-radius: 10px;
+	padding: 12px 16px;
+	color: #c62828;
+	font-size: 0.9rem;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.login-acciones {
+	margin-top: 8px;
+}
+
+.btn-ingresar {
+	width: 100%;
+	padding: 14px;
 	background: $color-primario;
 	color: $color-blanco;
+	border: none;
+	border-radius: 12px;
+	font-size: 1.05rem;
+	font-weight: 700;
+	cursor: pointer;
+	transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
 
-	&:hover {
-		background: mix($color-blanco, $color-primario, 8%);
+	&:hover:not(:disabled) {
+		background: mix($color-blanco, $color-primario, 10%);
+		transform: translateY(-1px);
+		box-shadow: 0 6px 18px rgba(0, 60, 88, 0.25);
+	}
+
+	&:active:not(:disabled) {
+		transform: translateY(0);
+	}
+
+	&:disabled {
+		opacity: 0.7;
+		cursor: not-allowed;
 	}
 }
 
-.btn-secundario {
-	background: rgba(0, 60, 88, 0.12);
-	color: $color-primario;
-	border: 1px solid rgba(0, 60, 88, 0.2);
-
-	&:hover {
-		background: rgba(0, 60, 88, 0.18);
-	}
-}
-
+// --- BOTTOMBAR ---
 .sigem-bottomline {
 	width: 100%;
 	background: #003c58;
 	color: #fff;
 	padding: 0;
-	margin-top: 48px;
 }
 .sigem-bottomline-content {
 	display: flex;
@@ -448,7 +549,8 @@ function volverAtras() {
 	justify-content: space-between;
 	max-width: 1400px;
 	margin: 0 auto;
-	padding: 12px 24px;
+	padding: 24px 40px;
+	gap: 24px;
 	flex-wrap: wrap;
 }
 .sigem-bottomline-left,
@@ -474,54 +576,12 @@ function volverAtras() {
 	margin-top: 4px;
 }
 
-.proyectos-panel {
-	margin-top: 32px;
-	background: $color-blanco;
-	border-radius: 16px;
-	padding: 32px;
-	border: 1px solid $color-borde;
-	box-shadow: 0 10px 22px $color-sombra-suave;
-}
-.panel-header {
-	margin-bottom: 20px;
-}
-.panel-title {
-	font-size: 1.25rem;
-	font-weight: 700;
-	color: $color-primario;
-	margin: 0;
-}
-.proyectos-table {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-}
-.table-row {
-	display: grid;
-	grid-template-columns: 2fr 1fr;
-	gap: 16px;
-	align-items: center;
-	padding: 14px 12px;
-	border-radius: 12px;
-	background: $color-claro;
-	border: 1px solid $color-borde;
-}
-.table-head {
-	background: #e9f1f6;
-	font-weight: 600;
-	color: $color-primario;
-}
-.table-name {
-	font-weight: 600;
-	color: $color-texto-principal;
-}
-
-@media (max-width: 980px) {
-	.creacion-content {
-		margin: 24px auto 48px auto;
+@media (max-width: 600px) {
+	.login-card {
+		padding: 32px 24px;
 	}
-	.formulario-panel {
-		padding: 24px;
+	.login-content {
+		padding: 32px 16px 48px;
 	}
 }
 </style>

@@ -58,8 +58,57 @@
 		<main class="parametros-content">
 			<header class="parametros-header">
 				<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
-				<h2 class="section-title">Parámetros</h2>
-				<p class="section-subtitle">Completa las variables por prestación seleccionada.</p>
+				<div class="parametros-header-top">
+					<div>
+						<h2 class="section-title">Parámetros</h2>
+						<p class="section-subtitle">Completa las variables por prestación seleccionada.</p>
+					</div>
+					<div class="calculadora-wrapper" ref="calculadoraRef">
+						<button
+							type="button"
+							class="calculadora-toggle"
+							:aria-expanded="mostrarCalculadora"
+							@click="mostrarCalculadora = !mostrarCalculadora"
+						>
+							<span class="calculadora-icono" aria-hidden="true"><i class="fa-solid fa-calculator"></i></span>
+							<span class="calculadora-texto">Calculadora de dias cama para UPC</span>
+							<i class="fa-solid fa-chevron-down calculadora-chevron" :class="{ 'is-open': mostrarCalculadora }"></i>
+						</button>
+						<section class="calculadora-panel" :class="{ 'is-open': mostrarCalculadora }">
+							<div v-show="mostrarCalculadora" class="calculadora-contenido">
+								<p class="calc-formula-hint">
+									<i class="fa-solid fa-circle-info"></i>
+									Días cama = (Coef. Técnico × PUAC ÷ 1000) × Promedio Estancia
+								</p>
+								<div class="calc-form">
+									<div class="calc-fields">
+										<div class="calc-field">
+											<label>Coeficiente Técnico</label>
+											<input v-model.number="calc.coeficienteTecnico" type="number" min="0" step="0.001" placeholder="0.000" />
+										</div>
+										<div class="calc-field">
+											<label>PUAC <span class="calc-field-hint">(÷ 1000)</span></label>
+											<input v-model.number="calc.puac" type="number" min="0" step="1" placeholder="0" />
+										</div>
+										<div class="calc-field">
+											<label>Promedio Estancia (días)</label>
+											<input v-model.number="calc.promedioEstancia" type="number" min="0" step="0.1" placeholder="0" />
+										</div>
+									</div>
+									<div class="calc-resultado">
+										<div class="calc-resultado-label">Días cama</div>
+										<div class="calc-resultado-valor">{{ diasCamaCalculados }}</div>
+									</div>
+								</div>
+								<div class="calc-footer">
+									<button type="button" class="calc-limpiar" @click="limpiarCalculadora">
+										<i class="fa-solid fa-rotate-left"></i> Limpiar
+									</button>
+								</div>
+							</div>
+						</section>
+					</div>
+				</div>
 			</header>
 
 			<section v-if="filas.length === 0" class="panel-vacio">
@@ -164,7 +213,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -185,6 +234,20 @@ const infoTexts = {
 
 const filas = ref([])
 const tooltipPosicion = ref({ top: '0px', left: '0px', visible: false, texto: '' })
+
+const mostrarCalculadora = ref(false)
+const calculadoraRef = ref(null)
+const calc = ref({ coeficienteTecnico: null, puac: null, promedioEstancia: null })
+
+const diasCamaCalculados = computed(() => {
+	if (calc.value.coeficienteTecnico === null || calc.value.puac === null || calc.value.promedioEstancia === null) return '—'
+	const ct = Number(calc.value.coeficienteTecnico)
+	const puac = Number(calc.value.puac)
+	const pe = Number(calc.value.promedioEstancia)
+	if (!Number.isFinite(ct) || !Number.isFinite(puac) || !Number.isFinite(pe)) return '—'
+	const result = (ct * puac / 1000) * pe
+	return Number.isFinite(result) ? Math.ceil(result) : '—'
+})
 
 function mostrarTooltip(event) {
 	const span = event.target
@@ -269,9 +332,52 @@ function cargarDatos() {
 	}
 }
 
-function guardarYCalcular() {
+async function guardarYCalcular() {
+	// Leer el id del proyecto activo (guardado al crear el proyecto)
+	const idProyectoActual = localStorage.getItem('ephdem_proyecto_activo')
+	if (!idProyectoActual) {
+		alert('No hay un proyecto activo. Vuelve a crear o seleccionar un proyecto.')
+		router.push('/crear-proyecto') // ajustar a la ruta real de creación
+		return
+	}
+
+	// Guardar parámetros en localStorage como respaldo (igual que antes)
 	localStorage.setItem(PARAMETROS_STORAGE_KEY, JSON.stringify(filas.value))
-	router.push('/resultados')
+
+	// Construir el payload con el contrato exacto del endpoint
+	const payload = {
+		proyecto_id: Number(idProyectoActual),
+		filas: filas.value.map((fila) => ({
+			prestacion_id:    fila.id,
+			demanda_anual:    numeroSeguro(fila.demanda),
+			dias_laborales:   numeroSeguro(fila.diasAnuales),
+			disponibilidad:   numeroSeguro(fila.disponibilidad) / 100, // % → decimal (100 → 1.0)
+			jornada_efectiva: numeroSeguro(fila.jornadaLaboral),
+		})),
+	}
+
+	try {
+		// Usamos VITE_API_BASE para que funcione tanto en local como en producción
+		const url = `${import.meta.env.VITE_API_BASE}/calcular_demanda.php`
+		const resp = await fetch(url, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(payload),
+		})
+		const data = await resp.json()
+
+		if (!data.ok) {
+			alert('Error al calcular: ' + (data.error || '') + (data.detalle ? '\n' + data.detalle.join('\n') : ''))
+			return
+		}
+
+		// Guardar el resultado para mostrarlo en /resultados
+		localStorage.setItem('ephdem_resultado_calculo', JSON.stringify(data.datos))
+		router.push('/resultados')
+	} catch (error) {
+		console.error('Error de conexión con el backend:', error)
+		alert('No se pudo conectar con el servidor de cálculo.')
+	}
 }
 
 function volverAtras() {
@@ -281,8 +387,23 @@ function volverAtras() {
 	}, 0)
 }
 
+function cerrarCalculadoraSiCorresponde(event) {
+	const contenedor = calculadoraRef.value
+	if (!contenedor || !mostrarCalculadora.value) return
+	if (!contenedor.contains(event.target)) mostrarCalculadora.value = false
+}
+
+function limpiarCalculadora() {
+	calc.value = { coeficienteTecnico: null, puac: null, promedioEstancia: null }
+}
+
 onMounted(() => {
 	cargarDatos()
+	document.addEventListener('pointerdown', cerrarCalculadoraSiCorresponde)
+})
+
+onBeforeUnmount(() => {
+	document.removeEventListener('pointerdown', cerrarCalculadoraSiCorresponde)
 })
 </script>
 
@@ -603,6 +724,194 @@ onMounted(() => {
 	.panel-vacio {
 		flex-direction: column;
 		align-items: flex-start;
+	}
+}
+
+// --- CALCULADORA DE DÍAS CAMA ---
+.parametros-header-top {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.calculadora-wrapper {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	flex: 0 0 auto;
+}
+
+.calculadora-toggle {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 16px;
+	border: 1.5px solid $color-primario;
+	border-radius: 999px;
+	background: rgba(0, 60, 88, 0.06);
+	color: $color-primario;
+	font-weight: 700;
+	font-size: 0.93rem;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background 0.2s ease, box-shadow 0.2s ease;
+
+	&:hover {
+		background: rgba(0, 60, 88, 0.12);
+		box-shadow: 0 2px 8px rgba(0, 60, 88, 0.12);
+	}
+}
+
+.calculadora-icono {
+	font-size: 1.05rem;
+}
+
+.calculadora-chevron {
+	font-size: 0.8rem;
+	transition: transform 0.25s ease;
+
+	&.is-open {
+		transform: rotate(180deg);
+	}
+}
+
+.calculadora-panel {
+	position: absolute;
+	top: calc(100% + 10px);
+	right: 0;
+	width: min(620px, 100vw - 32px);
+	z-index: 100;
+	pointer-events: none;
+
+	&.is-open {
+		pointer-events: auto;
+	}
+}
+
+.calculadora-contenido {
+	background: $color-blanco;
+	border: 1.5px solid $color-primario;
+	border-radius: 16px;
+	padding: 20px;
+	box-shadow: 0 8px 28px rgba(0, 60, 88, 0.14);
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.calc-formula-hint {
+	margin: 0;
+	font-size: 0.82rem;
+	color: $color-primario;
+	background: rgba(0, 60, 88, 0.07);
+	padding: 8px 12px;
+	border-radius: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-weight: 600;
+}
+
+.calc-form {
+	display: flex;
+	align-items: flex-end;
+	gap: 16px;
+}
+
+.calc-fields {
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	gap: 12px;
+	flex: 1 1 auto;
+}
+
+.calc-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+
+	label {
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: $color-primario;
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	input {
+		padding: 8px 10px;
+		border: 1.5px solid $color-borde;
+		border-radius: 8px;
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: $color-texto-principal;
+		width: 100%;
+		transition: border-color 0.2s ease;
+
+		&:focus {
+			outline: none;
+			border-color: $color-primario;
+		}
+	}
+}
+
+.calc-field-hint {
+	font-size: 0.72rem;
+	color: $color-texto-secundario;
+	font-weight: 600;
+}
+
+.calc-resultado {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	background: $color-primario;
+	border-radius: 12px;
+	padding: 10px 20px;
+	min-width: 110px;
+}
+
+.calc-resultado-label {
+	font-size: 0.72rem;
+	font-weight: 700;
+	color: rgba(255, 255, 255, 0.7);
+	white-space: nowrap;
+}
+
+.calc-resultado-valor {
+	font-size: 1.6rem;
+	font-weight: 800;
+	color: $color-blanco;
+	letter-spacing: -0.5px;
+}
+
+.calc-footer {
+	display: flex;
+	justify-content: flex-end;
+}
+
+.calc-limpiar {
+	background: none;
+	border: 1px solid $color-borde;
+	color: $color-texto-secundario;
+	border-radius: 8px;
+	padding: 6px 12px;
+	font-size: 0.82rem;
+	font-weight: 600;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+	&:hover {
+		background: rgba(0, 60, 88, 0.06);
+		color: $color-primario;
+		border-color: $color-primario;
 	}
 }
 </style>

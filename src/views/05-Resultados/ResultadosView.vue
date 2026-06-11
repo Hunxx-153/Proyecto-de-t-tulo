@@ -67,9 +67,21 @@
 					<h3>Proyecto</h3>
 					<p class="banner-sub">{{ nombreProyecto }}</p>
 				</div>
-				<div class="banner-total">
-					<span class="metric-value">{{ totalEquipos }}</span>
-					<span class="metric-label">Equipos totales</span>
+				<div class="banner-total" v-if="cargando">
+					<span class="metric-label">Cargando...</span>
+				</div>
+				<div class="banner-total" v-else-if="error">
+					<span class="metric-label" style="color:#ffaaaa">{{ error }}</span>
+				</div>
+				<div v-else style="display:flex; gap:32px; align-items:baseline;">
+					<div class="banner-total">
+						<span class="metric-value">{{ pabellones }}</span>
+						<span class="metric-label">Pabellones</span>
+					</div>
+					<div class="banner-total">
+						<span class="metric-value">{{ boxes }}</span>
+						<span class="metric-label">Boxes UPC</span>
+					</div>
 				</div>
 			</section>
 
@@ -196,12 +208,16 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
 const nombreProyecto = ref('Proyecto seleccionado')
+const pabellones = ref(0)
+const boxes = ref(0)
+const cargando = ref(true)
+const error = ref(null)
 
 const filtros = ref({
 	texto: '',
@@ -211,70 +227,11 @@ const filtros = ref({
 	prestacion: '',
 })
 
-const resultados = ref([
-	{
-		id: 1,
-		nombre: 'Monitor multiparametros',
-		tipo: 'Monitoreo',
-		total: 2,
-		recinto: 1,
-		especifico: 1,
-		recintos: ['Pabellon', 'Sala de procedimientos'],
-		prestaciones: ['UPC - Ventilacion mecanica'],
-	},
-	{
-		id: 2,
-		nombre: 'Ventilador mecanico',
-		tipo: 'Soporte vital',
-		total: 3,
-		recinto: 2,
-		especifico: 1,
-		recintos: ['UCI', 'UPC'],
-		prestaciones: ['UPC - Ventilacion mecanica'],
-	},
-	{
-		id: 3,
-		nombre: 'Bomba de infusion',
-		tipo: 'Soporte vital',
-		total: 4,
-		recinto: 2,
-		especifico: 2,
-		recintos: ['UCI'],
-		prestaciones: ['UPC - Terapia intensiva', 'UPC - Nutricion parenteral'],
-	},
-	{
-		id: 4,
-		nombre: 'Ecografo portatil',
-		tipo: 'Imagenologia',
-		total: 1,
-		recinto: 1,
-		especifico: 0,
-		recintos: ['Urgencia'],
-		prestaciones: [],
-	},
-	{
-		id: 5,
-		nombre: 'Desfibrilador',
-		tipo: 'Emergencia',
-		total: 2,
-		recinto: 1,
-		especifico: 1,
-		recintos: ['Urgencia'],
-		prestaciones: ['UPC - Reanimacion avanzada'],
-	},
-])
+const resultados = ref([])
 
-const opcionesTipo = computed(() => {
-	return [...new Set(resultados.value.map((equipo) => equipo.tipo))]
-})
-
-const opcionesRecinto = computed(() => {
-	return [...new Set(resultados.value.flatMap((equipo) => equipo.recintos))]
-})
-
-const opcionesPrestacion = computed(() => {
-	return [...new Set(resultados.value.flatMap((equipo) => equipo.prestaciones))]
-})
+const opcionesTipo = computed(() => [...new Set(resultados.value.map((e) => e.tipo))])
+const opcionesRecinto = computed(() => [...new Set(resultados.value.flatMap((e) => e.recintos))])
+const opcionesPrestacion = computed(() => [...new Set(resultados.value.flatMap((e) => e.prestaciones))])
 
 const resultadosFiltrados = computed(() => {
 	const texto = filtros.value.texto.trim().toLowerCase()
@@ -289,73 +246,57 @@ const resultadosFiltrados = computed(() => {
 	})
 })
 
-const resumenEquipos = computed(() => {
-	return resultadosFiltrados.value.map((equipo) => {
-		const total = equipo.total || 1
-		const porcentajeRecinto = Math.round((equipo.recinto / total) * 100)
-		const porcentajeEspecifico = Math.round((equipo.especifico / total) * 100)
-		return {
-			...equipo,
-			porcentajeRecinto,
-			porcentajeEspecifico,
-		}
-	})
-})
+const resumenEquipos = computed(() => resultadosFiltrados.value.map((equipo) => ({
+	...equipo,
+	porcentajeRecinto: Math.round((equipo.recinto / (equipo.total || 1)) * 100),
+	porcentajeEspecifico: Math.round((equipo.especifico / (equipo.total || 1)) * 100),
+})))
 
-const equiposRecinto = computed(() => {
-	return resultadosFiltrados.value.filter((equipo) => equipo.recinto > 0)
-})
-
-const equiposEspecificos = computed(() => {
-	return resultadosFiltrados.value.filter((equipo) => equipo.especifico > 0)
-})
+const equiposRecinto = computed(() => resultadosFiltrados.value.filter((e) => e.recinto > 0))
+const equiposEspecificos = computed(() => resultadosFiltrados.value.filter((e) => e.especifico > 0))
 
 const recintosAgrupados = computed(() => {
 	const mapa = new Map()
 	const colores = ['pastel-amber', 'pastel-rose', 'pastel-peach', 'pastel-sand']
 	let colorIndex = 0
-
 	equiposRecinto.value.forEach((equipo) => {
-		const recintos = Array.isArray(equipo.recintos) && equipo.recintos.length > 0
-			? equipo.recintos
-			: ['Recinto']
+		const recintos = Array.isArray(equipo.recintos) && equipo.recintos.length > 0 ? equipo.recintos : ['Recinto']
 		const cantidadPorRecinto = Math.max(1, Math.round(equipo.recinto / recintos.length))
-
 		recintos.forEach((recinto) => {
 			if (!mapa.has(recinto)) {
-				mapa.set(recinto, {
-					nombre: recinto,
-					items: [],
-					colorClass: colores[colorIndex % colores.length],
-				})
-				colorIndex += 1
+				mapa.set(recinto, { nombre: recinto, items: [], colorClass: colores[colorIndex % colores.length] })
+				colorIndex++
 			}
-			mapa.get(recinto).items.push({
-				nombre: equipo.nombre,
-				cantidad: cantidadPorRecinto,
-			})
+			mapa.get(recinto).items.push({ nombre: equipo.nombre, cantidad: cantidadPorRecinto })
 		})
 	})
-
 	return Array.from(mapa.values())
 })
 
-const equiposEspecificosTabla = computed(() => {
-	return equiposEspecificos.value.map((equipo) => ({
-		nombre: equipo.nombre,
-		cantidad: equipo.especifico,
-	}))
-})
+const equiposEspecificosTabla = computed(() => equiposEspecificos.value.map((e) => ({ nombre: e.nombre, cantidad: e.especifico })))
+const totalEquipos = computed(() => resultadosFiltrados.value.reduce((acc, e) => acc + e.total, 0))
 
-const totalEquipos = computed(() => {
-	return resultadosFiltrados.value.reduce((acc, equipo) => acc + equipo.total, 0)
+onMounted(() => {
+	const raw = localStorage.getItem('ephdem_resultado_calculo')
+	if (!raw) {
+		error.value = 'No hay resultados disponibles. Vuelve a parámetros y calcula.'
+		cargando.value = false
+		return
+	}
+	try {
+		const datos = JSON.parse(raw)
+		pabellones.value = datos.pabellones?.total ?? 0
+		boxes.value      = datos.boxes?.total ?? 0
+		cargando.value   = false
+	} catch (e) {
+		error.value = 'Error al leer los resultados.'
+		cargando.value = false
+	}
 })
 
 function volverAtras() {
 	router.back()
-	setTimeout(() => {
-		window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
-	}, 0)
+	setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
 }
 
 function exportarExcel() {
