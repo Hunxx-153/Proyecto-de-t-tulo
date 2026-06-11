@@ -56,11 +56,11 @@ define('BASE_URL',   '/__v2/modulo_eph/front');
 define('ASSETS_URL', BASE_URL . '/assets');
 
 // Archivos de entrada principal (hashes cambian con cada build)
-define('JS_MAIN',     ASSETS_URL . '/index-CZTaYmll.js');
+define('JS_MAIN',     ASSETS_URL . '/index-BlhszUQf.js');
 define('CSS_MAIN',    ASSETS_URL . '/index-HXKXub1w.css');
 
 // Chunk compartido de vue-router (preload para evitar waterfall)
-define('JS_ROUTER',   ASSETS_URL . '/vue-router-DKpwiv_K.js');
+define('JS_ROUTER',   ASSETS_URL . '/vue-router-MVqAPmvF.js');
 
 // Detección de entorno
 $isDev = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1'], true);

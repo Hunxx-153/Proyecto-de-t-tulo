@@ -185,7 +185,7 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const STORAGE_KEY = 'ephdem_prestaciones_seleccionadas'
-const PRESTACIONES_URL = 'ajax/get_prestaciones.php'
+const PRESTACIONES_URL = `${import.meta.env.VITE_API_BASE}/get_prestaciones.php`
 const PRESTACIONES_PRIORITARIAS = [
 	'Día Cama de Hospitalización Integral Adulto en Unidad de Cuidado Intensivo (U.C.I.)',
 	'Día Cama de Hospitalización Integral Adulto en Unidad de Tratamiento Intermedio (U.T.I.)',
