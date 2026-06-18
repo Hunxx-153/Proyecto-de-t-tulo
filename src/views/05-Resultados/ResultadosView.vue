@@ -51,14 +51,30 @@
 
 		<main class="resultados-content">
 			<header class="resultados-header">
-				<div class="header-left">
-					<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
-					<h2 class="section-title">Resultados</h2>
-					<p class="section-subtitle">Resumen general y desglose por origen del equipamiento.</p>
+				<!-- Fila 1: navegación y sesión -->
+				<div class="nav-bar">
+					<div class="nav-buttons">
+						<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+						<button class="btn-back" type="button" @click="router.push('/inicio')"><i class="fa-solid fa-house-user"></i> Inicio</button>
+					</div>
+					<div class="session-badge">
+						<i class="fa-solid fa-circle-user"></i>
+						<span class="session-nombre">{{ authStore.correoUsuario }}</span>
+						<button class="btn-logout" type="button" @click="cerrarSesion" title="Cerrar sesión">
+							<i class="fa-solid fa-right-from-bracket"></i>
+						</button>
+					</div>
 				</div>
-				<div class="header-actions">
-					<button class="btn-export btn-export-excel" type="button" @click="exportarExcel"><i class="fa-solid fa-file-excel"></i> Excel</button>
-					<button class="btn-export btn-export-pdf" type="button" @click="exportarPdf"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+				<!-- Fila 2: título + botones de exportar -->
+				<div class="title-actions-row">
+					<div>
+						<h2 class="section-title">Resultados</h2>
+						<p class="section-subtitle">Resumen general y desglose por origen del equipamiento.</p>
+					</div>
+					<div class="header-actions">
+						<button class="btn-export btn-export-excel" type="button" @click="exportarExcel"><i class="fa-solid fa-file-excel"></i> Excel</button>
+						<button class="btn-export btn-export-pdf" type="button" @click="exportarPdf"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+					</div>
 				</div>
 			</header>
 
@@ -210,8 +226,10 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const nombreProyecto = ref('Proyecto seleccionado')
 const pabellones = ref(0)
@@ -297,6 +315,11 @@ onMounted(() => {
 function volverAtras() {
 	router.back()
 	setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
+}
+
+function cerrarSesion() {
+	authStore.logout()
+	router.push('/login')
 }
 
 function exportarExcel() {
@@ -419,19 +442,64 @@ function exportarPdf() {
 }
 .resultados-header {
 	display: flex;
-	align-items: flex-start;
+	flex-direction: column;
+	gap: 10px;
+}
+.title-actions-row {
+	display: flex;
+	align-items: flex-end;
 	justify-content: space-between;
 	gap: 16px;
 }
 .header-left {
 	display: flex;
 	flex-direction: column;
-	gap: 6px;
+	gap: 4px;
 }
 .header-actions {
 	display: flex;
 	gap: 10px;
 	flex-wrap: wrap;
+	align-items: center;
+}
+.nav-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 0;
+}
+.nav-buttons {
+	display: flex;
+	gap: 10px;
+	align-self: flex-start;
+}
+.session-badge {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 14px 6px 10px;
+	background: rgba(0, 60, 88, 0.06);
+	border: 1.5px solid rgba(0, 60, 88, 0.18);
+	border-radius: 999px;
+	color: $color-primario;
+	font-size: 0.88rem;
+	font-weight: 600;
+	i { font-size: 1rem; }
+}
+.session-nombre {
+	white-space: nowrap;
+}
+.btn-logout {
+	background: none;
+	border: none;
+	color: $color-primario;
+	cursor: pointer;
+	padding: 2px 4px;
+	font-size: 0.95rem;
+	opacity: 0.7;
+	transition: opacity 0.2s, color 0.2s;
+	&:hover { opacity: 1; color: #c62828; }
 }
 .btn-back {
 	align-self: flex-start;

@@ -105,6 +105,9 @@
         </div>
 
       </div>
+      <p class="manual-link-hint">
+        <i class="fa-solid fa-book"></i> Revisa el <a class="link-manual" href="#" @click.prevent="router.push('/manual')"><strong><u>manual de usuario</u></strong></a> para conocer el flujo completo de la aplicación.
+      </p>
     </div>
 
   </div>
@@ -484,7 +487,7 @@ function iniciarAtencionCerrada() {
 
 /* TARJETAS */
 .content {
-  padding: 48px 24px 160px;
+  padding: 48px 24px 200px;
 }
 .section-title {
   text-align: center;
@@ -495,4 +498,19 @@ function iniciarAtencionCerrada() {
 }
 
 /* Los estilos de .cards y .card ahora están en _cards.scss y se aplican globalmente */
+
+.manual-link-hint {
+  text-align: center;
+  margin-top: 120px;
+  font-size: 0.95rem;
+  color: $color-texto-secundario;
+}
+.link-manual {
+  color: $color-primario;
+  text-decoration: underline;
+  font-weight: 700;
+  cursor: pointer;
+  transition: color 0.2s;
+  &:hover { color: darken(#003c58, 10%); }
+}
 </style>

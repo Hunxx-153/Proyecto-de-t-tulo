@@ -53,83 +53,87 @@
 
 			<main class="login-content">
 				<div class="login-card">
-					<div class="login-card-header">
-						<div class="login-icon">
-							<i class="fa-solid fa-user-lock"></i>
-						</div>
-						<h2 class="login-title">Iniciar sesión</h2>
-						<p class="login-subtitle">Ingresa tus credenciales para continuar</p>
-					</div>
 
-					<form @submit.prevent="iniciarSesion" class="login-form">
-						<!-- Email -->
-						<div class="form-group">
-							<label for="login-email" class="form-label">
-								<i class="fa-solid fa-envelope"></i> Correo electrónico
-							</label>
-							<input
-								id="login-email"
-								v-model="formulario.email"
-								type="email"
-								class="form-input"
-								:class="{ 'form-input--error': errores.email }"
-								placeholder="correo@sigem-uv.cl"
-								autocomplete="email"
-								required
-							/>
-							<span v-if="errores.email" class="form-error">{{ errores.email }}</span>
-						</div>
-
-						<!-- Contraseña -->
-						<div class="form-group">
-							<label for="login-password" class="form-label">
-								<i class="fa-solid fa-lock"></i> Contraseña
-							</label>
-							<div class="input-password-wrapper">
-								<input
-									id="login-password"
-									v-model="formulario.password"
-									:type="mostrarPassword ? 'text' : 'password'"
-									class="form-input"
-									:class="{ 'form-input--error': errores.password }"
-									placeholder="••••••••"
-									autocomplete="current-password"
-									required
-								/>
-								<button
-									type="button"
-									class="btn-toggle-password"
-									@click="mostrarPassword = !mostrarPassword"
-									:title="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-								>
-									<i :class="mostrarPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
-								</button>
+					<!-- ESTADO ÉXITO -->
+					<transition name="card-fade" mode="out-in">
+						<div v-if="loginExitoso" class="login-success" key="success">
+							<div class="success-icon">
+								<i class="fa-solid fa-circle-check"></i>
 							</div>
-							<span v-if="errores.password" class="form-error">{{ errores.password }}</span>
+							<p class="success-msg">Sesión iniciada</p>
+							<p class="success-sub">{{ formulario.email }}</p>
 						</div>
 
-						<!-- Error general -->
-						<div v-if="errorGeneral" class="login-error-general">
-							<i class="fa-solid fa-circle-exclamation"></i>
-							{{ errorGeneral }}
+						<!-- FORMULARIO -->
+						<div v-else key="form">
+							<div class="login-card-header">
+								<div class="login-icon">
+									<i class="fa-solid fa-user-lock"></i>
+								</div>
+								<h2 class="login-title">Iniciar sesión</h2>
+								<p class="login-subtitle">Ingresa tus credenciales para continuar</p>
+							</div>
+							<form @submit.prevent="iniciarSesion" class="login-form">
+								<!-- Email -->
+								<div class="form-group">
+									<label for="login-email" class="form-label">
+										<i class="fa-solid fa-envelope"></i> Correo electrónico
+									</label>
+									<input
+										id="login-email"
+										v-model="formulario.email"
+										type="email"
+										class="form-input"
+										:class="{ 'form-input--error': errores.email }"
+										placeholder="correo@sigem-uv.cl"
+										autocomplete="email"
+										required
+									/>
+									<span v-if="errores.email" class="form-error">{{ errores.email }}</span>
+								</div>
+								<!-- Contraseña -->
+								<div class="form-group">
+									<label for="login-password" class="form-label">
+										<i class="fa-solid fa-lock"></i> Contraseña
+									</label>
+									<div class="input-password-wrapper">
+										<input
+											id="login-password"
+											v-model="formulario.password"
+											:type="mostrarPassword ? 'text' : 'password'"
+											class="form-input"
+											:class="{ 'form-input--error': errores.password }"
+											placeholder="••••••••"
+											autocomplete="current-password"
+											required
+										/>
+										<button
+											type="button"
+											class="btn-toggle-password"
+											@click="mostrarPassword = !mostrarPassword"
+											:title="mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+										>
+											<i :class="mostrarPassword ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye'"></i>
+										</button>
+									</div>
+									<span v-if="errores.password" class="form-error">{{ errores.password }}</span>
+								</div>
+								<!-- Error general -->
+								<div v-if="errorGeneral" class="login-error-general">
+									<i class="fa-solid fa-circle-exclamation"></i>
+									{{ errorGeneral }}
+								</div>
+								<!-- Acciones -->
+								<div class="login-acciones">
+									<button type="submit" class="btn-ingresar" :disabled="cargando">
+										<span v-if="cargando"><i class="fa-solid fa-spinner fa-spin"></i> Verificando...</span>
+										<span v-else>Ingresar <i class="fa-solid fa-arrow-right"></i></span>
+									</button>
+								</div>
+							</form>
 						</div>
+					</transition>
 
-						<!-- Acciones -->
-						<div class="login-acciones">
-							<button
-								type="submit"
-								class="btn-ingresar"
-								:disabled="cargando"
-							>
-								<span v-if="cargando">
-									<i class="fa-solid fa-spinner fa-spin"></i> Verificando...
-								</span>
-								<span v-else>
-									Ingresar <i class="fa-solid fa-arrow-right"></i>
-								</span>
-							</button>
-						</div>
-					</form>
 				</div>
 			</main>
 		</div>
@@ -165,8 +169,10 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const formulario = ref({
 	email: '',
@@ -181,6 +187,7 @@ const errores = ref({
 const errorGeneral = ref('')
 const cargando = ref(false)
 const mostrarPassword = ref(false)
+const loginExitoso = ref(false)
 
 function validar() {
 	errores.value = { email: '', password: '' }
@@ -211,22 +218,21 @@ async function iniciarSesion() {
 
 	cargando.value = true
 	try {
-		// Aquí irá la llamada al backend de autenticación en el futuro
-		// Por ahora simulamos un pequeño delay y redirigimos
-		await new Promise(resolve => setTimeout(resolve, 800))
-
-		// Cuando se implemente: llamar a /ajax/login.php con email y password
-		// y si es exitoso, guardar sesión y navegar
-		router.push('/inicio')
-
+		await authStore.login(formulario.value.email, formulario.value.password)
+		loginExitoso.value = true
+		setTimeout(() => {
+			router.push('/inicio')
+		}, 1800)
 	} catch (error) {
-		console.error('Error al iniciar sesión:', error)
-		errorGeneral.value = 'Error de conexión. Inténtalo nuevamente.'
+		errorGeneral.value = error instanceof Error
+			? error.message
+			: 'Error de conexión. Inténtalo nuevamente.'
 	} finally {
 		cargando.value = false
 	}
 }
 </script>
+
 
 <style lang="scss" scoped>
 @import '@/assets/styles/variables';
@@ -359,6 +365,10 @@ async function iniciarSesion() {
 	box-shadow: 0 16px 40px $color-sombra-suave;
 	width: 100%;
 	max-width: 460px;
+	min-height: 480px;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
 }
 
 .login-card-header {
@@ -583,5 +593,40 @@ async function iniciarSesion() {
 	.login-content {
 		padding: 32px 16px 48px;
 	}
+}
+// ─── ÉXITO EN TARJETA ───────────────────────────────────────
+.login-success {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 48px 32px;
+	gap: 10px;
+	text-align: center;
+}
+.success-icon {
+	font-size: 2.6rem;
+	color: #1a9e5c;
+	animation: check-in 0.4s ease both;
+}
+.success-msg {
+	margin: 6px 0 0;
+	font-size: 1.1rem;
+	font-weight: 700;
+	color: $color-primario;
+}
+.success-sub {
+	margin: 0;
+	font-size: 0.88rem;
+	color: $color-texto-secundario;
+}
+
+.card-fade-enter-active { transition: opacity 0.25s ease; }
+.card-fade-leave-active { transition: opacity 0.2s ease; }
+.card-fade-enter-from, .card-fade-leave-to { opacity: 0; }
+
+@keyframes check-in {
+	from { transform: scale(0.6); opacity: 0; }
+	to   { transform: scale(1);   opacity: 1; }
 }
 </style>

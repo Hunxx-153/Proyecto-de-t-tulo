@@ -52,9 +52,26 @@
 
 			<main class="creacion-content">
 				<header class="creacion-header">
-					<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+					<div class="nav-bar">
+						<div class="nav-buttons">
+							<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+							<button class="btn-back" type="button" @click="router.push('/inicio')"><i class="fa-solid fa-house-user"></i> Inicio</button>
+						</div>
+						<div class="session-badge">
+							<i class="fa-solid fa-circle-user"></i>
+							<span class="session-nombre">{{ authStore.correoUsuario }}</span>
+							<button class="btn-logout" type="button" @click="cerrarSesion" title="Cerrar sesión">
+								<i class="fa-solid fa-right-from-bracket"></i>
+							</button>
+						</div>
+					</div>
 					<h2 class="section-title">Crear Proyecto</h2>
-					<p class="section-subtitle">Completa los datos del nuevo proyecto.</p>
+					<div class="instruccion-indicator">
+						<span class="instruccion-icon-circle">
+							<i class="fa-solid fa-circle-info"></i>
+						</span>
+						<span class="instruccion-texto">Ingresa el nombre del proyecto y presiona <strong>Guardar</strong> para registrarlo en el sistema.</span>
+					</div>
 				</header>
 
 				<section class="formulario-panel">
@@ -78,21 +95,35 @@
 					</form>
 				</section>
 
-			<section v-if="proyectosPrevios.length > 0" class="proyectos-panel">
+			<section class="proyectos-panel">
 				<div class="panel-header">
-					<h3 class="panel-title">Proyectos anteriores</h3>
+					<h3 class="panel-title">Mis proyectos</h3>
 				</div>
-				<div class="proyectos-table">
+				<div v-if="cargandoProyectos" class="proyectos-estado">
+					<i class="fa-solid fa-spinner fa-spin"></i> Cargando proyectos...
+				</div>
+				<div v-else-if="proyectosPrevios.length === 0" class="proyectos-estado">
+					Aún no tienes proyectos creados.
+				</div>
+				<div v-else class="proyectos-table">
 					<div class="table-row table-head">
 						<div>Nombre del proyecto</div>
 						<div>Fecha de creación</div>
+						<div>Tipo de proyecto</div>
+						<div class="table-actions">Acciones</div>
 					</div>
 					<div v-for="proyecto in proyectosPrevios" :key="proyecto.id" class="table-row">
 						<div class="table-name">{{ proyecto.nombre_proyecto }}</div>
 						<div>{{ proyecto.fecha_creacion }}</div>
+						<div class="table-chip">{{ proyecto.tipo_proyecto }}</div>
+						<div class="table-actions">
+							<button class="btn-secondary" type="button" @click="verProyecto(proyecto)">Ver</button>
+							<button class="btn-outline" type="button" @click="editarProyecto(proyecto)">Editar</button>
+						</div>
 					</div>
 				</div>
 			</section>
+
 			</main>
 		</div>
 
@@ -127,27 +158,54 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const formulario = ref({
 	nombreProyecto: '',
 })
 
 const proyectosPrevios = ref([])
+const cargandoProyectos = ref(false)
 
-onMounted(() => {
-	const proyectosGuardados = localStorage.getItem('ephdem_proyectos')
-	if (proyectosGuardados) {
-		proyectosPrevios.value = JSON.parse(proyectosGuardados)
-	}
+onMounted(async () => {
+	await cargarProyectosPrevios()
 })
+
+async function cargarProyectosPrevios() {
+	const userId = authStore.usuarioId
+	if (!userId) return
+
+	cargandoProyectos.value = true
+	try {
+		const url = `${import.meta.env.VITE_API_BASE}/get_proyectos.php?usuario_id=${userId}`
+		const response = await fetch(url, { method: 'GET', credentials: 'same-origin' })
+		const result = await response.json()
+
+		if (result.ok && Array.isArray(result.datos)) {
+			proyectosPrevios.value = result.datos
+		}
+	} catch (error) {
+		console.error('Error al cargar proyectos previos:', error)
+	} finally {
+		cargandoProyectos.value = false
+	}
+}
 
 async function guardarProyecto() {
 	const { nombreProyecto } = formulario.value
 
 	if (!nombreProyecto.trim()) {
 		alert('Por favor, ingresa un nombre para el proyecto.')
+		return
+	}
+
+	const userId = authStore.usuarioId
+	if (!userId) {
+		alert('No hay sesión activa. Por favor, inicia sesión nuevamente.')
+		router.push('/login')
 		return
 	}
 
@@ -158,7 +216,8 @@ async function guardarProyecto() {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				nombre_proyecto: nombreProyecto,
-				tipo_proyecto: 'Atencion cerrada'
+				tipo_proyecto: 'Atencion cerrada',
+				usuario_id: userId,
 			})
 		})
 
@@ -168,19 +227,6 @@ async function guardarProyecto() {
 			alert(result.error || 'Error al crear el proyecto en la base de datos.')
 			return
 		}
-
-		// Opcionalmente, guardamos también en localStorage para mantener el estado local actual
-		const nuevoProyecto = {
-			id: result.datos.id_proyecto,
-			nombre_proyecto: result.datos.nombre_proyecto,
-			fecha_creacion: new Date().toLocaleDateString('es-CL'),
-			tipo_proyecto: result.datos.tipo_proyecto,
-		}
-
-		const proyectosGuardados = localStorage.getItem('ephdem_proyectos')
-		const proyectos = proyectosGuardados ? JSON.parse(proyectosGuardados) : []
-		proyectos.push(nuevoProyecto)
-		localStorage.setItem('ephdem_proyectos', JSON.stringify(proyectos))
 
 		// Guardar el ID del proyecto activo para usarlo en las siguientes vistas
 		localStorage.setItem('ephdem_proyecto_activo', result.datos.id_proyecto)
@@ -204,7 +250,21 @@ function volverAtras() {
 		window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
 	}, 0)
 }
+
+function cerrarSesion() {
+	authStore.logout()
+	router.push('/login')
+}
+
+function verProyecto(proyecto) {
+	alert(`Visualizando: ${proyecto.nombre_proyecto}`)
+}
+
+function editarProyecto(proyecto) {
+	alert(`Editando: ${proyecto.nombre_proyecto}`)
+}
 </script>
+
 
 <style lang="scss" scoped>
 @import '@/assets/styles/variables';
@@ -325,6 +385,46 @@ function volverAtras() {
 	flex-direction: column;
 	gap: 24px;
 }
+.nav-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+}
+.nav-buttons {
+	display: flex;
+	gap: 10px;
+	align-self: flex-start;
+	margin-bottom: 0;
+}
+.session-badge {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 14px 6px 10px;
+	background: rgba(0, 60, 88, 0.06);
+	border: 1.5px solid rgba(0, 60, 88, 0.18);
+	border-radius: 999px;
+	color: $color-primario;
+	font-size: 0.88rem;
+	font-weight: 600;
+	i { font-size: 1rem; }
+}
+.session-nombre {
+	white-space: nowrap;
+}
+.btn-logout {
+	background: none;
+	border: none;
+	color: $color-primario;
+	cursor: pointer;
+	padding: 2px 4px;
+	font-size: 0.95rem;
+	opacity: 0.7;
+	transition: opacity 0.2s, color 0.2s;
+	&:hover { opacity: 1; color: #c62828; }
+}
 .btn-back {
 	align-self: flex-start;
 	background: $color-primario;
@@ -351,6 +451,35 @@ function volverAtras() {
 .section-subtitle {
 	margin: 0;
 	color: $color-texto-secundario;
+}
+
+.instruccion-indicator {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 14px;
+	background: rgba(0, 60, 88, 0.06);
+	border: 1px solid rgba(0, 60, 88, 0.14);
+	border-radius: 10px;
+	padding: 10px 16px;
+}
+
+.instruccion-icon-circle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: $color-primario;
+	font-size: 1.4rem;
+}
+
+.instruccion-texto {
+	font-size: 1.1rem;
+	color: $color-primario;
+	line-height: 1.45;
+
+	strong {
+		font-weight: 700;
+	}
 }
 
 .formulario-panel {
@@ -498,7 +627,7 @@ function volverAtras() {
 }
 .table-row {
 	display: grid;
-	grid-template-columns: 2fr 1fr;
+	grid-template-columns: 2.2fr 1fr 1fr 1.2fr;
 	gap: 16px;
 	align-items: center;
 	padding: 14px 12px;
@@ -515,6 +644,56 @@ function volverAtras() {
 	font-weight: 600;
 	color: $color-texto-principal;
 }
+.table-chip {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 6px 12px;
+	border-radius: 999px;
+	background: rgba(0, 60, 88, 0.08);
+	color: $color-primario;
+	font-weight: 600;
+	font-size: 0.85rem;
+}
+.table-actions {
+	display: flex;
+	gap: 10px;
+	justify-content: flex-end;
+}
+.btn-secondary {
+	background: $color-secundario;
+	color: $color-blanco;
+	border: none;
+	border-radius: 8px;
+	padding: 8px 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: opacity 0.2s;
+	&:hover { opacity: 0.85; }
+}
+.btn-outline {
+	background: none;
+	color: $color-primario;
+	border: 1px solid $color-primario;
+	border-radius: 8px;
+	padding: 8px 14px;
+	font-weight: 600;
+	cursor: pointer;
+	transition: background 0.2s;
+	&:hover { background: rgba(0,60,88,0.07); }
+}
+
+.proyectos-estado {
+	padding: 20px;
+	text-align: center;
+	color: $color-texto-secundario;
+	font-size: 0.95rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+}
+
 
 @media (max-width: 980px) {
 	.creacion-content {

@@ -12,7 +12,8 @@ $inputJSON = file_get_contents('php://input');
 $input = json_decode($inputJSON, true);
 
 $nombre_proyecto = $input['nombre_proyecto'] ?? '';
-$tipo_proyecto = $input['tipo_proyecto'] ?? 'Atencion cerrada';
+$tipo_proyecto   = $input['tipo_proyecto']   ?? 'Atencion cerrada';
+$usuario_id      = isset($input['usuario_id']) ? (int) $input['usuario_id'] : null;
 
 if (trim($nombre_proyecto) === '') {
     http_response_code(400);
@@ -47,9 +48,9 @@ if ($stmt) {
 }
 
 // ===== INSERCIÓN =====
-$stmtInsert = mysqli_prepare($conn, "INSERT INTO EPHAC_Proyectos (Nombre_proyecto, fecha_creacion, usuario_id, Datos_Json) VALUES (?, NOW(), NULL, NULL)");
+$stmtInsert = mysqli_prepare($conn, "INSERT INTO EPHAC_Proyectos (Nombre_proyecto, fecha_creacion, usuario_id, Datos_Json) VALUES (?, NOW(), ?, NULL)");
 if ($stmtInsert) {
-    mysqli_stmt_bind_param($stmtInsert, "s", $nombre_proyecto);
+    mysqli_stmt_bind_param($stmtInsert, "si", $nombre_proyecto, $usuario_id);
     if (mysqli_stmt_execute($stmtInsert)) {
         $id = mysqli_insert_id($conn);
         echo json_encode([

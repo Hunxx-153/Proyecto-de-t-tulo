@@ -57,12 +57,21 @@
 
 		<main class="parametros-content">
 			<header class="parametros-header">
-				<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
-				<div class="parametros-header-top">
-					<div>
-						<h2 class="section-title">Parámetros</h2>
-						<p class="section-subtitle">Completa las variables por prestación seleccionada.</p>
+				<div class="nav-bar">
+					<div class="nav-buttons">
+						<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+						<button class="btn-back" type="button" @click="router.push('/inicio')"><i class="fa-solid fa-house-user"></i> Inicio</button>
 					</div>
+					<div class="session-badge">
+						<i class="fa-solid fa-circle-user"></i>
+						<span class="session-nombre">{{ authStore.correoUsuario }}</span>
+						<button class="btn-logout" type="button" @click="cerrarSesion" title="Cerrar sesión">
+							<i class="fa-solid fa-right-from-bracket"></i>
+						</button>
+					</div>
+				</div>
+				<div class="parametros-header-top">
+					<h2 class="section-title">Parámetros</h2>
 					<div class="calculadora-wrapper" ref="calculadoraRef">
 						<button
 							type="button"
@@ -83,15 +92,24 @@
 								<div class="calc-form">
 									<div class="calc-fields">
 										<div class="calc-field">
-											<label>Coeficiente Técnico</label>
+											<label>
+												Coeficiente Técnico
+												<span class="info-icon" :data-tooltip="infoTexts.calcCoeficienteTecnico" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
+											</label>
 											<input v-model.number="calc.coeficienteTecnico" type="number" min="0" step="0.001" placeholder="0.000" />
 										</div>
 										<div class="calc-field">
-											<label>PUAC <span class="calc-field-hint">(÷ 1000)</span></label>
+											<label>
+												PUAC <span class="calc-field-hint">(÷ 1000)</span>
+												<span class="info-icon" :data-tooltip="infoTexts.calcPuac" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
+											</label>
 											<input v-model.number="calc.puac" type="number" min="0" step="1" placeholder="0" />
 										</div>
 										<div class="calc-field">
-											<label>Promedio Estancia (días)</label>
+											<label>
+												Promedio Estancia (días)
+												<span class="info-icon" :data-tooltip="infoTexts.calcPromedioEstancia" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
+											</label>
 											<input v-model.number="calc.promedioEstancia" type="number" min="0" step="0.1" placeholder="0" />
 										</div>
 									</div>
@@ -108,6 +126,15 @@
 							</div>
 						</section>
 					</div>
+				</div>
+				<div class="instruccion-indicator">
+					<span class="instruccion-icon-circle">
+						<i class="fa-solid fa-circle-info"></i>
+					</span>
+					<span class="instruccion-texto">
+						Completa las variables para cada prestación seleccionada. En el símbolo<span class="info-icon info-icon--demo" aria-hidden="true">i</span>
+						podrás ver en específico las características de cada parámetro, para el caso de la UPC, puedes usar la calculadora en base a coeficiente técnico para obtener los dias cama, si ya conoces ese valor, ingresalo en la demanda de la prestación <strong>"Día cama"</strong> correspondiente de UPC.
+					</span>
 				</div>
 			</header>
 
@@ -134,10 +161,7 @@
 									Tiempo de procedimiento (min)
 									<span class="info-icon" :data-tooltip="infoTexts.tiempoProcedimiento" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
 								</th>
-								<th>
-									Tasa de rotación
-									<span class="info-icon" :data-tooltip="infoTexts.tasaRotacion" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
-								</th>
+
 								<th>
 									Disponibilidad (%)
 									<span class="info-icon" :data-tooltip="infoTexts.disponibilidad" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
@@ -155,23 +179,19 @@
 									<div class="prestacion-nombre">{{ fila.nombre_prestacion }}</div>
 								</td>
 								<td>
-									<input v-model.number="fila.demanda" type="number" min="0" step="1" />
+									<input v-model.number="fila.demanda" type="number" min="0" step="1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-demanda`) }" @input="limpiarError(fila.id, 'demanda')" />
 								</td>
 								<td>
-									<input v-model.number="fila.diasAnuales" type="number" min="1" step="1" />
-								</td>
-								<td class="celda-tiempo-procedimiento">
-									<input v-model.number="fila.tiempoProcedimiento" type="number" min="0" step="0.1" @input="actualizarDesdeTiempo(fila)" />
-									<div class="campo-ayuda">Equivale a {{ formatearDiasEquivalentes(fila.tiempoProcedimiento) }}</div>
+									<input v-model.number="fila.diasAnuales" type="number" min="1" step="1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-diasAnuales`) }" @input="limpiarError(fila.id, 'diasAnuales')" />
 								</td>
 								<td>
-									<input v-model.number="fila.tasaRotacion" type="number" min="0" step="0.01" @input="actualizarDesdeTasa(fila)" />
+									<input v-model.number="fila.tiempoProcedimiento" type="number" min="0" step="0.1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-tiempoProcedimiento`) }" @input="limpiarError(fila.id, 'tiempoProcedimiento')" />
 								</td>
 								<td>
-									<input v-model.number="fila.disponibilidad" type="number" min="0" max="100" step="0.1" />
+									<input v-model.number="fila.disponibilidad" type="number" min="0" max="100" step="0.1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-disponibilidad`) }" @input="limpiarError(fila.id, 'disponibilidad')" />
 								</td>
 								<td>
-									<input v-model.number="fila.jornadaLaboral" type="number" min="0" step="0.1" />
+									<input v-model.number="fila.jornadaLaboral" type="number" min="0" step="0.1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-jornadaLaboral`) }" @input="limpiarError(fila.id, 'jornadaLaboral')" />
 								</td>
 							</tr>
 						</tbody>
@@ -179,6 +199,12 @@
 				</div>
 
 				<div class="acciones-finales">
+					<transition name="fade-error">
+						<div v-if="errorValidacion" class="banner-error" role="alert">
+							<i class="fa-solid fa-triangle-exclamation"></i>
+							{{ errorValidacion }}
+						</div>
+					</transition>
 					<button class="btn-principal" @click="guardarYCalcular">Guardar y calcular</button>
 				</div>
 			</section>
@@ -215,25 +241,30 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const PRESTACIONES_STORAGE_KEY = 'ephdem_prestaciones_seleccionadas'
 const PARAMETROS_STORAGE_KEY = 'ephdem_parametros_prestaciones'
 const MINUTOS_POR_HORA = 60
-const HORAS_POR_DIA = 24
-const MINUTOS_POR_DIA = MINUTOS_POR_HORA * HORAS_POR_DIA
 
 const infoTexts = {
 	demanda: 'Cantidad de atenciones proyectadas para esta prestación en el período.',
 	diasAnuales: 'Número de días disponibles al año para operar. En atención cerrada normalmente 365, pero editable.',
-	tiempoProcedimiento: 'Minutos por procedimiento. Se sincroniza automáticamente con la tasa de rotación.',
-	tasaRotacion: 'Cantidad de procedimientos por día equivalente (24 hrs = 1.0). Se sincroniza con tiempo de procedimiento.',
+	tiempoProcedimiento: 'Minutos que dura el procedimiento.',
 	disponibilidad: 'Porcentaje de disponibilidad real del equipo para esta prestación.',
 	jornadaLaboral: 'Horas efectivas de operación al día. En atención cerrada normalmente 24, pero editable.',
+	calcCoeficienteTecnico: 'Número de camas UCI o UTI por cada 1.000 habitantes. Dato propio del establecimiento o estándar ministerial. Ejemplo: 0.020 significa 20 camas por 1.000 hab.',
+	calcPuac: 'Población Usuaria Asignada al Centro (PUAC). Total de habitantes que dependen del establecimiento para esta prestación.',
+	calcPromedioEstancia: 'Promedio de días que un paciente ocupa una cama. UCI estándar ≈ 5 días, UTI estándar ≈ 8 días.',
+
 }
 
 const filas = ref([])
 const tooltipPosicion = ref({ top: '0px', left: '0px', visible: false, texto: '' })
+const erroresCeldas = ref(new Set())
+const errorValidacion = ref('')
 
 const mostrarCalculadora = ref(false)
 const calculadoraRef = ref(null)
@@ -270,7 +301,6 @@ function crearFila(prestacion, parametrosGuardados) {
 		prestacion.tiempo_procedimiento ??
 		prestacion.tiempoProcedimiento ??
 		MINUTOS_POR_HORA
-	const tasaRotacionInicial = redondear(numeroSeguro(tiempoProcedimientoInicial) / MINUTOS_POR_DIA)
 
 	return {
 		id: prestacion.id,
@@ -279,7 +309,6 @@ function crearFila(prestacion, parametrosGuardados) {
 		demanda: parametrosGuardados?.demanda ?? 0,
 		diasAnuales: parametrosGuardados?.diasAnuales ?? 365,
 		tiempoProcedimiento: tiempoProcedimientoInicial,
-		tasaRotacion: parametrosGuardados?.tasaRotacion ?? tasaRotacionInicial,
 		disponibilidad: parametrosGuardados?.disponibilidad ?? 100,
 		jornadaLaboral: parametrosGuardados?.jornadaLaboral ?? 24,
 	}
@@ -293,20 +322,7 @@ function numeroSeguro(valor) {
 	return Number.isFinite(valor) ? valor : 0
 }
 
-function formatearDiasEquivalentes(minutos) {
-	const dias = redondear(numeroSeguro(minutos) / MINUTOS_POR_DIA)
-	return `${dias} día${dias === 1 ? '' : 's'}`
-}
 
-function actualizarDesdeTiempo(fila) {
-	const tiempo = numeroSeguro(fila.tiempoProcedimiento)
-	fila.tasaRotacion = redondear(tiempo / MINUTOS_POR_DIA)
-}
-
-function actualizarDesdeTasa(fila) {
-	const tasa = numeroSeguro(fila.tasaRotacion)
-	fila.tiempoProcedimiento = redondear(tasa * MINUTOS_POR_DIA)
-}
 
 function cargarDatos() {
 	const rawPrestaciones = localStorage.getItem(PRESTACIONES_STORAGE_KEY)
@@ -332,7 +348,35 @@ function cargarDatos() {
 	}
 }
 
+const CAMPOS_REQUERIDOS = ['demanda', 'diasAnuales', 'tiempoProcedimiento', 'disponibilidad', 'jornadaLaboral']
+
+function validarFilas() {
+	const errores = new Set()
+	for (const fila of filas.value) {
+		for (const campo of CAMPOS_REQUERIDOS) {
+			const val = fila[campo]
+			if (val === null || val === undefined || val === '' || Number(val) <= 0) {
+				errores.add(`${fila.id}-${campo}`)
+			}
+		}
+	}
+	erroresCeldas.value = errores
+	return errores.size === 0
+}
+
+function limpiarError(id, campo) {
+	erroresCeldas.value.delete(`${id}-${campo}`)
+	erroresCeldas.value = new Set(erroresCeldas.value)
+	if (erroresCeldas.value.size === 0) errorValidacion.value = ''
+}
+
 async function guardarYCalcular() {
+	if (!validarFilas()) {
+		errorValidacion.value = 'Hay celdas vacías o con valor 0. Ingresa un valor válido en los campos marcados en rojo antes de continuar.'
+		return
+	}
+	errorValidacion.value = ''
+
 	// Leer el id del proyecto activo (guardado al crear el proyecto)
 	const idProyectoActual = localStorage.getItem('ephdem_proyecto_activo')
 	if (!idProyectoActual) {
@@ -405,6 +449,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
 	document.removeEventListener('pointerdown', cerrarCalculadoraSiCorresponde)
 })
+
+function cerrarSesion() {
+	authStore.logout()
+	router.push('/login')
+}
 </script>
 
 <style lang="scss" scoped>
@@ -516,6 +565,46 @@ onBeforeUnmount(() => {
 	flex-direction: column;
 	gap: 24px;
 }
+.nav-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+}
+.nav-buttons {
+	display: flex;
+	gap: 10px;
+	align-self: flex-start;
+	margin-bottom: 0;
+}
+.session-badge {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 14px 6px 10px;
+	background: rgba(0, 60, 88, 0.06);
+	border: 1.5px solid rgba(0, 60, 88, 0.18);
+	border-radius: 999px;
+	color: $color-primario;
+	font-size: 0.88rem;
+	font-weight: 600;
+	i { font-size: 1rem; }
+}
+.session-nombre {
+	white-space: nowrap;
+}
+.btn-logout {
+	background: none;
+	border: none;
+	color: $color-primario;
+	cursor: pointer;
+	padding: 2px 4px;
+	font-size: 0.95rem;
+	opacity: 0.7;
+	transition: opacity 0.2s, color 0.2s;
+	&:hover { opacity: 1; color: #c62828; }
+}
 .btn-back {
 	align-self: flex-start;
 	background: $color-primario;
@@ -539,9 +628,40 @@ onBeforeUnmount(() => {
 	color: $color-primario;
 	margin: 0 0 6px 0;
 }
-.section-subtitle {
-	margin: 0;
-	color: $color-texto-secundario;
+.instruccion-indicator {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 6px;
+	background: rgba(0, 60, 88, 0.06);
+	border: 1px solid rgba(0, 60, 88, 0.14);
+	border-radius: 10px;
+	padding: 10px 16px;
+}
+
+.instruccion-icon-circle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: $color-primario;
+	font-size: 1.4rem;
+	flex: 0 0 auto;
+}
+
+.instruccion-texto {
+	font-size: 1.05rem;
+	color: $color-primario;
+	line-height: 1.8;
+
+	strong {
+		font-weight: 700;
+	}
+}
+
+.info-icon--demo {
+	vertical-align: middle;
+	pointer-events: none;
+	cursor: default;
 }
 
 .panel-vacio,
@@ -593,10 +713,51 @@ onBeforeUnmount(() => {
 	background: $color-blanco;
 	font-weight: 500;
 	color: $color-texto-principal;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
-.celda-tiempo-procedimiento {
-	padding-bottom: 18px;
+.tabla-parametros td input.input-error {
+	border-color: #e53935;
+	background: #fff5f5;
+	box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.18);
+	animation: shake 0.35s ease;
 }
+
+@keyframes shake {
+	0%   { transform: translateX(0); }
+	20%  { transform: translateX(-5px); }
+	40%  { transform: translateX(5px); }
+	60%  { transform: translateX(-4px); }
+	80%  { transform: translateX(4px); }
+	100% { transform: translateX(0); }
+}
+
+.banner-error {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background: #fff5f5;
+	border: 1.5px solid #e53935;
+	color: #c62828;
+	border-radius: 10px;
+	padding: 10px 16px;
+	font-size: 0.88rem;
+	font-weight: 600;
+	width: 100%;
+	max-width: 600px;
+
+	i { font-size: 1rem; flex-shrink: 0; }
+}
+
+.fade-error-enter-active,
+.fade-error-leave-active {
+	transition: opacity 0.25s ease, transform 0.25s ease;
+}
+.fade-error-enter-from,
+.fade-error-leave-to {
+	opacity: 0;
+	transform: translateY(-6px);
+}
+
 .prestacion-codigo {
 	font-size: 0.85rem;
 	font-weight: 700;
@@ -606,12 +767,6 @@ onBeforeUnmount(() => {
 	font-size: 0.95rem;
 	font-weight: 500;
 	color: $color-texto-principal;
-}
-.campo-ayuda {
-	display: block;
-	margin-top: 6px;
-	font-size: 0.8rem;
-	color: $color-texto-secundario;
 }
 .info-icon {
 	display: inline-flex;
@@ -646,6 +801,8 @@ onBeforeUnmount(() => {
 	line-height: 1.5;
 	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 	word-wrap: break-word;
+	border: 3px solid rgba(255, 255, 255, 0.25);
+	outline: 2px solid rgba(255, 255, 255, 0.12);
 }
 
 .tooltip-flecha {
@@ -662,7 +819,9 @@ onBeforeUnmount(() => {
 .acciones-finales {
 	margin-top: 16px;
 	display: flex;
-	justify-content: flex-end;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 10px;
 }
 .btn-principal,
 .btn-secundario {
@@ -730,7 +889,7 @@ onBeforeUnmount(() => {
 // --- CALCULADORA DE DÍAS CAMA ---
 .parametros-header-top {
 	display: flex;
-	align-items: flex-start;
+	align-items: center;
 	justify-content: space-between;
 	gap: 16px;
 }
@@ -830,6 +989,7 @@ onBeforeUnmount(() => {
 .calc-field {
 	display: flex;
 	flex-direction: column;
+	justify-content: flex-end;
 	gap: 4px;
 
 	label {
@@ -839,6 +999,7 @@ onBeforeUnmount(() => {
 		display: flex;
 		align-items: center;
 		gap: 4px;
+		white-space: nowrap;
 	}
 
 	input {

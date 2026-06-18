@@ -52,7 +52,19 @@
 
     <main class="proyectos-content" id="PROYECTOS">
       <header class="proyectos-header">
-        <button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+        <div class="nav-bar">
+          <div class="nav-buttons">
+            <button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+            <button class="btn-back" type="button" @click="router.push('/inicio')"><i class="fa-solid fa-house-user"></i> Inicio</button>
+          </div>
+          <div class="session-badge">
+            <i class="fa-solid fa-circle-user"></i>
+            <span class="session-nombre">{{ authStore.correoUsuario }}</span>
+            <button class="btn-logout" type="button" @click="cerrarSesion" title="Cerrar sesión">
+              <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+          </div>
+        </div>
         <h2 class="section-title">Mis proyectos</h2>
         <p class="section-subtitle">Visualiza y edita los proyectos asociados a tu usuario.</p>
       </header>
@@ -72,8 +84,16 @@
           </div>
         </div>
 
-        <div v-if="proyectos.length === 0" class="lista-vacia">
-          <p>Aun no hay proyectos creados.</p>
+        <div v-if="cargando" class="lista-vacia">
+          <i class="fa-solid fa-spinner fa-spin"></i> Cargando proyectos...
+        </div>
+
+        <div v-else-if="errorCarga" class="lista-vacia lista-error">
+          <i class="fa-solid fa-triangle-exclamation"></i> {{ errorCarga }}
+        </div>
+
+        <div v-else-if="proyectos.length === 0" class="lista-vacia">
+          <p>Aún no hay proyectos creados.</p>
           <p>Haz clic en Nuevo proyecto para comenzar.</p>
         </div>
 
@@ -126,32 +146,45 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const mostrarMenuNuevo = ref(false)
 
-const proyectos = ref([
-  {
-    id: 1,
-    nombre_proyecto: 'Hospital San Martin de Quillota',
-    fecha_creacion: '01/05/2026',
-    tipo_proyecto: 'Atencion cerrada',
-  },
-  {
-    id: 2,
-    nombre_proyecto: 'Estudio Base para Hospital de Casablanca',
-    fecha_creacion: '28/04/2026',
-    tipo_proyecto: 'Atencion abierta',
-  },
-  {
-    id: 3,
-    nombre_proyecto: 'Expansion Hospitalario Valparaiso',
-    fecha_creacion: '20/04/2026',
-    tipo_proyecto: 'Atencion cerrada',
-  },
-])
+const proyectos = ref([])
+const cargando = ref(false)
+const errorCarga = ref('')
+
+onMounted(async () => {
+  await cargarProyectos()
+})
+
+async function cargarProyectos() {
+  const userId = authStore.usuarioId
+  if (!userId) return
+
+  cargando.value = true
+  errorCarga.value = ''
+  try {
+    const url = `${import.meta.env.VITE_API_BASE}/get_proyectos.php?usuario_id=${userId}`
+    const response = await fetch(url, { method: 'GET', credentials: 'same-origin' })
+    const result = await response.json()
+
+    if (result.ok && Array.isArray(result.datos)) {
+      proyectos.value = result.datos
+    } else {
+      errorCarga.value = result.error ?? 'No se pudieron cargar los proyectos.'
+    }
+  } catch (error) {
+    console.error('Error al cargar proyectos:', error)
+    errorCarga.value = 'Error de conexión al cargar proyectos.'
+  } finally {
+    cargando.value = false
+  }
+}
 
 function toggleNuevoMenu() {
   mostrarMenuNuevo.value = !mostrarMenuNuevo.value
@@ -177,7 +210,13 @@ function editarProyecto(proyecto) {
 function volverAtras() {
   router.back()
 }
+
+function cerrarSesion() {
+  authStore.logout()
+  router.push('/login')
+}
 </script>
+
 
 <style lang="scss" scoped>
 @import '@/assets/styles/variables';
@@ -294,6 +333,46 @@ function volverAtras() {
 }
 .proyectos-header {
   text-align: left;
+}
+.nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.nav-buttons {
+  display: flex;
+  gap: 10px;
+  align-self: flex-start;
+  margin-bottom: 0;
+}
+.session-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px 6px 10px;
+  background: rgba(0, 60, 88, 0.06);
+  border: 1.5px solid rgba(0, 60, 88, 0.18);
+  border-radius: 999px;
+  color: $color-primario;
+  font-size: 0.88rem;
+  font-weight: 600;
+  i { font-size: 1rem; }
+}
+.session-nombre {
+  white-space: nowrap;
+}
+.btn-logout {
+  background: none;
+  border: none;
+  color: $color-primario;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 0.95rem;
+  opacity: 0.7;
+  transition: opacity 0.2s, color 0.2s;
+  &:hover { opacity: 1; color: #c62828; }
 }
 .btn-back {
   align-self: flex-start;
@@ -424,7 +503,20 @@ function volverAtras() {
   text-align: center;
   color: $color-texto-secundario;
   border: 1px dashed $color-borde;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
 }
+
+.lista-error {
+  background: rgba(229, 57, 53, 0.05);
+  border: 1px dashed rgba(229, 57, 53, 0.4);
+  color: #c62828;
+  flex-direction: row;
+  gap: 10px;
+}
+
 
 .proyectos-table {
   display: flex;

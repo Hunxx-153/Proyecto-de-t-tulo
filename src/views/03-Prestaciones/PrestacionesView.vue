@@ -52,7 +52,19 @@
 
 		<main class="prestaciones-content">
 			<header class="prestaciones-header">
-				<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+				<div class="nav-bar">
+					<div class="nav-buttons">
+						<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
+						<button class="btn-back" type="button" @click="router.push('/inicio')"><i class="fa-solid fa-house-user"></i> Inicio</button>
+					</div>
+					<div class="session-badge">
+						<i class="fa-solid fa-circle-user"></i>
+						<span class="session-nombre">{{ authStore.correoUsuario }}</span>
+						<button class="btn-logout" type="button" @click="cerrarSesion" title="Cerrar sesión">
+							<i class="fa-solid fa-right-from-bracket"></i>
+						</button>
+					</div>
+				</div>
 				<div class="prestaciones-header-top">
 					<h2 class="section-title">Prestaciones</h2>
 					<div ref="consideracionesRef" class="consideraciones-wrapper">
@@ -72,13 +84,24 @@
 							<div v-show="mostrarConsideraciones" id="consideraciones-contenido" class="consideraciones-contenido">
 								<ol>
 									<li>Antes de seleccionar alguna prestación de UPC ya sea de UTI o UCI, selecciona las prestaciones "Día Cama de Hospitalización Integral Adulto en Unidad de Cuidado Intensivo (U.C.I.)" o "Día Cama de Hospitalización Integral Adulto en Unidad de Tratamiento Intermedio (U.T.I.)" según corresponda, esto es necesario para que el modelo pueda calcular la catidad de módulos necesarios para la proyección.</li>
-									<li>Para el calculo es necesario indicar al sistema la demanda de "dias cama". Por lo general un dia cama UCI (5d) y UTI (8d) tienen un promedio definido. Para calcular los dias camas usa la formula (N de estancias * dias promedios), puede usar los promedios estandar o los propios de la institucion para una estimación más precisa.</li>
+									
 								</ol>
 							</div>
 						</section>
 					</div>
 				</div>
-				<p class="section-subtitle">Selecciona las prestaciones que se asociaran al proyecto.</p>
+				<div class="instruccion-indicator">
+					<span class="instruccion-icon-circle">
+						<i class="fa-solid fa-circle-info"></i>
+					</span>
+					<span class="instruccion-texto">
+					Selecciona las prestaciones que se asociarán al proyecto: usa
+					<span class="instruccion-badge instruccion-badge--agregar"><i class="fa-solid fa-plus"></i></span>
+					para agregar y
+					<span class="instruccion-badge instruccion-badge--quitar"><i class="fa-solid fa-xmark"></i></span>
+					para eliminar de la selección. Luego presiona <strong>Guardar y confirmar</strong> para guardar la selección.
+				</span>
+				</div>
 			</header>
 
 			<section class="filtros-panel">
@@ -182,8 +205,10 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const authStore = useAuthStore()
 const STORAGE_KEY = 'ephdem_prestaciones_seleccionadas'
 const PRESTACIONES_URL = `${import.meta.env.VITE_API_BASE}/get_prestaciones.php`
 const PRESTACIONES_PRIORITARIAS = [
@@ -370,6 +395,11 @@ onMounted(() => {
 onBeforeUnmount(() => {
 	document.removeEventListener('pointerdown', cerrarConsideracionesSiCorresponde)
 })
+
+function cerrarSesion() {
+	authStore.logout()
+	router.push('/login')
+}
 </script>
 
 <style lang="scss" scoped>
@@ -498,6 +528,46 @@ onBeforeUnmount(() => {
 	justify-content: space-between;
 	gap: 16px;
 }
+.nav-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 10px;
+}
+.nav-buttons {
+	display: flex;
+	gap: 10px;
+	align-self: flex-start;
+	margin-bottom: 0;
+}
+.session-badge {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 6px 14px 6px 10px;
+	background: rgba(0, 60, 88, 0.06);
+	border: 1.5px solid rgba(0, 60, 88, 0.18);
+	border-radius: 999px;
+	color: $color-primario;
+	font-size: 0.88rem;
+	font-weight: 600;
+	i { font-size: 1rem; }
+}
+.session-nombre {
+	white-space: nowrap;
+}
+.btn-logout {
+	background: none;
+	border: none;
+	color: $color-primario;
+	cursor: pointer;
+	padding: 2px 4px;
+	font-size: 0.95rem;
+	opacity: 0.7;
+	transition: opacity 0.2s, color 0.2s;
+	&:hover { opacity: 1; color: #c62828; }
+}
 .btn-back {
 	align-self: flex-start;
 	background: $color-primario;
@@ -521,9 +591,61 @@ onBeforeUnmount(() => {
 	color: $color-primario;
 	margin: 0;
 }
-.section-subtitle {
-	margin: 0;
-	color: $color-texto-secundario;
+.instruccion-indicator {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-top: 6px;
+	background: rgba(0, 60, 88, 0.06);
+	border: 1px solid rgba(0, 60, 88, 0.14);
+	border-radius: 10px;
+	padding: 10px 16px;
+}
+
+.instruccion-icon-circle {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: $color-primario;
+	font-size: 1.4rem;
+	flex: 0 0 auto;
+}
+
+.instruccion-texto {
+	font-size: 1.05rem;
+	color: $color-primario;
+	line-height: 1.8;
+
+	strong {
+		font-weight: 700;
+	}
+}
+
+.instruccion-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	padding: 2px 9px;
+	border-radius: 6px;
+	font-size: 0.88rem;
+	font-weight: 700;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+
+.instruccion-badge--agregar {
+	background: $color-exito;
+	color: $color-blanco;
+}
+
+.instruccion-badge--quitar {
+	background: $color-peligro;
+	color: $color-blanco;
+}
+
+.instruccion-badge--guardar {
+	background: $color-primario;
+	color: $color-blanco;
 }
 
 .filtros-panel {
@@ -591,28 +713,22 @@ onBeforeUnmount(() => {
 	width: auto;
 	display: flex;
 	align-items: center;
-	gap: 12px;
-	padding: 14px 16px;
-	border: none;
-	background: transparent;
-	color: #f59e0b;
+	gap: 10px;
+	padding: 10px 16px;
+	border: 1.5px solid #d97706;
+	border-radius: 999px;
+	background: rgba(251, 191, 36, 0.1);
+	color: #92400e;
 	font-weight: 700;
+	font-size: 0.93rem;
 	cursor: pointer;
-	text-align: left;
-	transition: background 0.2s ease;
+	white-space: nowrap;
+	transition: background 0.2s ease, box-shadow 0.2s ease;
 
 	&:hover {
-		background: rgba(204, 142, 17, 0.05);
+		background: rgba(251, 191, 36, 0.18);
+		box-shadow: 0 2px 10px rgba(217, 119, 6, 0.18);
 	}
-}
-
-.consideraciones-toggle-header {
-	padding: 10px 14px;
-	border-radius: 999px;
-	background: rgba(245, 159, 11, 0.144);
-	border: none;
-	flex: 0 0 auto;
-	white-space: nowrap;
 }
 
 .consideraciones-icono {
@@ -620,42 +736,50 @@ onBeforeUnmount(() => {
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: 34px;
-	height: 34px;
+	width: 26px;
+	height: 26px;
 	border-radius: 50%;
-	background: rgba(245, 158, 11, 0.12);
-	color: #f59e0b;
-	font-size: 1.1rem;
+	background: rgba(251, 191, 36, 0.22);
+	color: #b45309;
+	font-size: 0.95rem;
 }
 
 .consideraciones-texto {
 	flex: 1 1 auto;
-	font-size: 1rem;
+	font-size: 0.93rem;
 }
 
 .consideraciones-contenido {
 	position: relative;
 	z-index: 1;
-	padding: 14px 16px 16px 16px;
-	color: #5c5957;
-	background: #fef9e7;
-	border: 1px solid #e9981e;
-	border-radius: 16px;
-	box-shadow: none;
-	font-weight: 600;
+	padding: 18px 20px;
+	background: #fffbeb;
+	border: 1.5px solid #fbbf24;
+	border-top: 4px solid #f59e0b;
+	border-radius: 12px;
+	box-shadow: 0 8px 24px rgba(217, 119, 6, 0.12);
+	color: #78350f;
 
 	ol {
 		margin: 0;
 		padding-left: 20px;
 		display: grid;
-		gap: 10px;
+		gap: 12px;
 	}
 
 	li {
-		line-height: 1.5;
-		color: inherit;
+		line-height: 1.65;
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: #78350f;
+
+		&::marker {
+			color: #d97706;
+			font-weight: 700;
+		}
 	}
 }
+
 
 .prestaciones-grid {
 	display: grid;
