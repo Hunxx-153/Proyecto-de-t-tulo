@@ -20,13 +20,13 @@
 			<div class="collapse navbar-collapse" id="navbarSIGEMUV">
 				<ul class="navbar-nav ms-auto mb-2 mb-md-0">
 					<li class="nav-item">
-						<a class="nav-link d-flex align-items-center" href="#MODULOS"><i class="fa fa-th me-2"></i>Modulos</a>
+						<a class="nav-link d-flex align-items-center" href="https://sigem-uv.cl/__v2/#MODULOS" target="_blank"><i class="fa fa-th me-2"></i>Módulos</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="#PROYECTOS">Proyectos</a>
+						<a class="nav-link" href="https://sigem-uv.cl/__v2/#PROYECTOS" target="_blank">Proyectos</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="nosotros.php">Nosotros</a>
+						<a class="nav-link" href="https://sigem-uv.cl/__v2/nosotros.php" target="_blank">Nosotros</a>
 					</li>
 					<li class="nav-item">
 						<a class="nav-link" href="#footer">Contacto</a>
@@ -43,9 +43,9 @@
 		<section class="hero hero-compact">
 			<div class="hero-bg"></div>
 			<div class="hero-content">
-				<div class="hero-tag">MODULO EPHDEM</div>
-				<h1 class="hero-title">Estudio de Preinversion Hospitalaria</h1>
-				<p class="hero-sub">Resumen de equipamiento calculado desde el back-end para el proyecto seleccionado.</p>
+				<div class="hero-tag">MÓDULO EPHDEM</div>
+				<h1 class="hero-title">Estudio de Preinversión Hospitalaria</h1>
+				<p class="hero-sub">Resultado de requerimiento de equipamiento para el proyecto.</p>
 			</div>
 		</section>
 
@@ -114,11 +114,11 @@
 					</select>
 				</div>
 				<div class="filtro">
-					<label>Origen del calculo</label>
+					<label>Origen del cálculo</label>
 					<select v-model="filtros.origen">
 						<option value="">Todos</option>
 						<option value="recinto">Equipos asociados a recintos</option>
-						<option value="especifico">Equipos especificos de prestacion</option>
+						<option value="especifico">Equipos específicos de prestación</option>
 					</select>
 				</div>
 				<div class="filtro">
@@ -129,7 +129,7 @@
 					</select>
 				</div>
 				<div class="filtro">
-					<label>Prestacion</label>
+					<label>Prestación</label>
 					<select v-model="filtros.prestacion">
 						<option value="">Todas</option>
 						<option v-for="prestacion in opcionesPrestacion" :key="prestacion" :value="prestacion">{{ prestacion }}</option>
@@ -176,10 +176,10 @@
 				</div>
 
 				<div class="desglose-section desglose-section-especifico">
-					<div class="desglose-title">Equipos especificos</div>
+					<div class="desglose-title">Equipos específicos</div>
 					<div v-if="equiposEspecificosTabla.length === 0" class="lista-vacia">Sin equipos para este filtro.</div>
 					<div v-else class="recinto-table especifico-table">
-						<div class="recinto-title">Equipos especificos por prestacion</div>
+						<div class="recinto-title">Equipos específicos por prestación</div>
 						<div class="tabla-mini">
 							<div class="tabla-mini-head">
 								<span>Equipo</span>
@@ -203,7 +203,7 @@
 				<img src="https://sigem-uv.cl/_general/logos/LOGO_SIGEM-UV_HORIZONTAL-BLANCO.png" alt="SIGEM-UV" height="48" />
 			</div>
 			<div class="sigem-bottomline-center">
-				<div>Gral. Cruz 222, Valparaiso ::: +56 32 2603662</div>
+				<div>Gral. Cruz 222, Valparaíso ::: +56 32 2603662</div>
 				<div>
 					<a href="mailto:contacto@sigem-uv.cl" style="color:#fff">contacto@sigem-uv.cl</a> :::
 					<a href="https://biomedica.uv.cl" style="color:#fff" target="_blank">www.biomedica.uv.cl</a>

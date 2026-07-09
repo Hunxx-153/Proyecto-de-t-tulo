@@ -20,13 +20,13 @@
 			<div class="collapse navbar-collapse" id="navbarSIGEMUV">
 				<ul class="navbar-nav ms-auto mb-2 mb-md-0">
 					<li class="nav-item">
-						<a class="nav-link d-flex align-items-center" href="#MODULOS"><i class="fa fa-th me-2"></i>Modulos</a>
+						<a class="nav-link d-flex align-items-center" href="https://sigem-uv.cl/__v2/#MODULOS" target="_blank"><i class="fa fa-th me-2"></i>Módulos</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="#PROYECTOS">Proyectos</a>
+						<a class="nav-link" href="https://sigem-uv.cl/__v2/#PROYECTOS" target="_blank">Proyectos</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="nosotros.php">Nosotros</a>
+						<a class="nav-link" href="https://sigem-uv.cl/__v2/nosotros.php" target="_blank">Nosotros</a>
 					</li>
 					<li class="nav-item">
 						<a class="nav-link" href="#footer">Contacto</a>
@@ -44,9 +44,9 @@
 		<section class="hero hero-compact">
 			<div class="hero-bg"></div>
 			<div class="hero-content">
-				<div class="hero-tag">MODULO EPHDEM</div>
-				<h1 class="hero-title">Estudio de Preinversion Hospitalaria</h1>
-				<p class="hero-sub">Herramienta para la estimacion de equipamiento medico necesario para satisfacer una demanda proyectada de prestaciones.</p>
+				<div class="hero-tag">MÓDULO EPHDEM</div>
+				<h1 class="hero-title">Estudio de Preinversión Hospitalaria</h1>
+				<p class="hero-sub">Herramienta para la estimación de equipamiento médico necesario para satisfacer una demanda proyectada de prestaciones.</p>
 			</div>
 		</section>
 
@@ -83,7 +83,7 @@
 						<section class="consideraciones-panel consideraciones-panel-header" :class="{ 'is-open': mostrarConsideraciones }">
 							<div v-show="mostrarConsideraciones" id="consideraciones-contenido" class="consideraciones-contenido">
 								<ol>
-									<li>Antes de seleccionar alguna prestación de UPC ya sea de UTI o UCI, selecciona las prestaciones "Día Cama de Hospitalización Integral Adulto en Unidad de Cuidado Intensivo (U.C.I.)" o "Día Cama de Hospitalización Integral Adulto en Unidad de Tratamiento Intermedio (U.T.I.)" según corresponda, esto es necesario para que el modelo pueda calcular la catidad de módulos necesarios para la proyección.</li>
+									<li>Antes de seleccionar alguna prestación de UPC ya sea de UTI o UCI, selecciona las prestaciones "Día Cama de Hospitalización Integral Adulto en Unidad de Cuidado Intensivo (U.C.I.)" o "Día Cama de Hospitalización Integral Adulto en Unidad de Tratamiento Intermedio (U.T.I.)" según corresponda, esto es necesario para que el modelo pueda calcular la cantidad de módulos necesarios para la proyección.</li>
 									
 								</ol>
 							</div>
@@ -107,17 +107,17 @@
 			<section class="filtros-panel">
 				<div class="filtro filtro-buscar">
 					<label>Buscar</label>
-					<input v-model="filtros.texto" type="text" placeholder="Codigo o nombre" />
+					<input v-model="filtros.texto" type="text" placeholder="Código o nombre" />
 				</div>
 				<div class="filtro">
-					<label>Area</label>
+					<label>Área</label>
 					<select v-model="filtros.area">
 						<option value="">Todas</option>
 						<option v-for="area in opcionesArea" :key="area" :value="area">{{ area }}</option>
 					</select>
 				</div>
 				<div class="filtro">
-					<label>Subarea</label>
+					<label>Subárea</label>
 					<select v-model="filtros.subarea">
 						<option value="">Todas</option>
 						<option v-for="subarea in opcionesSubarea" :key="subarea" :value="subarea">{{ subarea }}</option>
@@ -150,8 +150,21 @@
 				</div>
 
 				<div class="prestaciones-panel">
-					<div class="panel-title">Seleccionadas</div>
-					<div v-if="prestacionesSeleccionadas.length === 0" class="lista-vacia">Aun no has seleccionado prestaciones.</div>
+					<div class="panel-header-seleccionadas">
+						<div class="panel-title">Seleccionadas</div>
+						<button
+							type="button"
+							class="btn-limpiar-seleccion"
+							:disabled="prestacionesSeleccionadas.length === 0"
+							@click="limpiarSeleccion"
+						>
+							<span class="limpiar-icono" aria-hidden="true">
+								<i class="fa-solid fa-trash-can"></i>
+							</span>
+							<span class="limpiar-texto">Limpiar selección</span>
+						</button>
+					</div>
+					<div v-if="prestacionesSeleccionadas.length === 0" class="lista-vacia">Aún no has seleccionado prestaciones.</div>
 					<div v-else class="prestaciones-lista">
 						<div v-for="prestacion in prestacionesSeleccionadas" :key="prestacion.id" class="prestacion-item">
 							<div class="prestacion-info">
@@ -261,15 +274,15 @@ const opcionesRecinto = computed(() => {
 
 const prestacionesFiltradas = computed(() => {
 	const seleccionadasIds = new Set(seleccionadas.value.map((p) => p.id))
-	const texto = filtros.value.texto.trim().toLowerCase()
+	const texto = normalizarTexto(filtros.value.texto)
 	return prestaciones.value.filter((p) => {
 		if (seleccionadasIds.has(p.id)) return false
 		if (filtros.value.area && p.area !== filtros.value.area) return false
 		if (filtros.value.subarea && p.subarea !== filtros.value.subarea) return false
 		if (filtros.value.recinto && p.recinto !== filtros.value.recinto) return false
 		if (texto) {
-			const codigo = String(p.codigo_fonasa ?? '').toLowerCase()
-			const nombre = String(p.nombre_prestacion ?? '').toLowerCase()
+			const codigo = normalizarTexto(p.codigo_fonasa)
+			const nombre = normalizarTexto(p.nombre_prestacion)
 			if (!codigo.includes(texto) && !nombre.includes(texto)) return false
 		}
 		return true
@@ -330,7 +343,7 @@ async function cargarPrestaciones() {
 				tiempo_procedimiento: item?.tiempo_procedimiento ?? item?.tiempoProcedimiento ?? '',
 				area: item?.area_hospitalaria ?? item?.area ?? '',
 				subarea: item?.subarea_hospitalaria ?? item?.subarea ?? '',
-				recinto: item?.recinto_base_id ?? item?.recinto ?? '',
+				recinto: item?.nombre_recinto ?? item?.recinto ?? '',
 			}))
 			.filter((item) => item.id != null)
 	} catch (error) {
@@ -365,6 +378,10 @@ function agregarPrestacion(prestacion) {
 
 function quitarPrestacion(prestacion) {
 	seleccionadas.value = seleccionadas.value.filter((p) => p.id !== prestacion.id)
+}
+
+function limpiarSeleccion() {
+	seleccionadas.value = []
 }
 
 function guardarYConfirmar() {
@@ -830,11 +847,74 @@ function cerrarSesion() {
 	display: flex;
 	flex-direction: column;
 }
+.panel-header-seleccionadas {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 14px;
+}
+
+.panel-header-seleccionadas .panel-title {
+	margin-bottom: 0;
+}
+
 .panel-title {
 	font-size: 1.1rem;
 	font-weight: 700;
 	color: $color-primario;
 	margin-bottom: 14px;
+}
+
+.btn-limpiar-seleccion {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 7px 14px;
+	border: 1.5px solid #dc2626;
+	border-radius: 999px;
+	background: rgba(239, 68, 68, 0.08);
+	color: #991b1b;
+	font-weight: 700;
+	font-size: 0.85rem;
+	cursor: pointer;
+	white-space: nowrap;
+	transition: background 0.2s ease, box-shadow 0.2s ease;
+
+	&:hover:not(:disabled) {
+		background: rgba(239, 68, 68, 0.16);
+		box-shadow: 0 2px 10px rgba(220, 38, 38, 0.18);
+	}
+
+	&:disabled {
+		border-color: #9ca3af;
+		background: rgba(156, 163, 175, 0.08);
+		color: #9ca3af;
+		cursor: not-allowed;
+
+		.limpiar-icono {
+			background: rgba(156, 163, 175, 0.18);
+			color: #9ca3af;
+		}
+	}
+}
+
+.limpiar-icono {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border-radius: 50%;
+	background: rgba(239, 68, 68, 0.18);
+	color: #b91c1c;
+	font-size: 0.82rem;
+}
+
+.limpiar-texto {
+	flex: 1 1 auto;
+	font-size: 0.85rem;
 }
 .prestaciones-lista {
 	display: flex;

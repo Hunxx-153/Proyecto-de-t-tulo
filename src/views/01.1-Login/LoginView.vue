@@ -1,4 +1,4 @@
-<template>
+﻿<template>
 	<div class="login-layout">
 		<!-- TOP BAR 1: Logos institucionales -->
 		<div class="sigem-topbar1">
@@ -21,13 +21,13 @@
 				<div class="collapse navbar-collapse" id="navbarSIGEMUV">
 					<ul class="navbar-nav ms-auto mb-2 mb-md-0">
 						<li class="nav-item">
-							<a class="nav-link d-flex align-items-center" href="#MODULOS"><i class="fa fa-th me-2"></i>Modulos</a>
+							<a class="nav-link d-flex align-items-center" href="https://sigem-uv.cl/__v2/#MODULOS" target="_blank"><i class="fa fa-th me-2"></i>Módulos</a>
 						</li>
 						<li class="nav-item">
-							<a class="nav-link" href="#PROYECTOS">Proyectos</a>
+							<a class="nav-link" href="https://sigem-uv.cl/__v2/#PROYECTOS" target="_blank">Proyectos</a>
 						</li>
 						<li class="nav-item">
-							<a class="nav-link" href="nosotros.php">Nosotros</a>
+							<a class="nav-link" href="https://sigem-uv.cl/__v2/nosotros.php" target="_blank">Nosotros</a>
 						</li>
 						<li class="nav-item">
 							<a class="nav-link" href="#footer">Contacto</a>

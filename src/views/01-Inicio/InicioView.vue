@@ -21,13 +21,13 @@
       <div class="collapse navbar-collapse" id="navbarSIGEMUV">
         <ul class="navbar-nav ms-auto mb-2 mb-md-0">
           <li class="nav-item">
-            <a class="nav-link d-flex align-items-center" href="#MODULOS"><i class="fa fa-th me-2"></i>Módulos</a>
+            <a class="nav-link d-flex align-items-center" href="https://sigem-uv.cl/__v2/#MODULOS" target="_blank"><i class="fa fa-th me-2"></i>Módulos</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="#PROYECTOS">Proyectos</a>
+            <a class="nav-link" href="https://sigem-uv.cl/__v2/#PROYECTOS" target="_blank">Proyectos</a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="nosotros.php">Nosotros</a>
+            <a class="nav-link" href="https://sigem-uv.cl/__v2/nosotros.php" target="_blank">Nosotros</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="#footer">Contacto</a>
@@ -47,11 +47,15 @@
       <div class="hero-bg"></div>
       <div class="hero-content">
         <div class="hero-logos">
-          <!-- Logo EphDEM -->
-          <img src="@/assets/img/Logo-Claro-EphDEM.png" alt="Logo EphDEM" class="hero-logo logo-ephdem" />
-          <div class="logo-sep"></div>
           <!-- Logo SIGEM Horizontal -->
-          <img src="@/assets/img/logo-sigem-horizontal-blanco.png" alt="Logo SIGEM-UV" class="hero-logo logo-sigem" />
+          <div class="hero-logo-side hero-logo-side--left">
+            <img src="@/assets/img/logo-sigem-horizontal-blanco.png" alt="Logo SIGEM-UV" class="hero-logo logo-sigem" />
+          </div>
+          <div class="logo-sep"></div>
+          <!-- Logo EphDEM -->
+          <div class="hero-logo-side hero-logo-side--right">
+            <img src="@/assets/img/Logo-Claro-EphDEM.png" alt="Logo EphDEM" class="hero-logo logo-ephdem" />
+          </div>
         </div>
         <div class="hero-tag">Módulo EphDEM</div>
         <h1 class="hero-title">Estudio de Preinversión Hospitalaria</h1>
@@ -63,7 +67,7 @@
 
     <!-- TARJETAS -->
     <div class="content">
-      <div class="section-title">Bienvenidos!,  Selecciona un módulo para comenzar</div>
+      <div class="section-title">¡Bienvenidos! Selecciona un módulo para comenzar</div>
       <div class="cards cards-primary">
 
         <!-- Mis proyectos -->
@@ -84,7 +88,7 @@
             <div class="card-icon card-icon-plus" aria-hidden="true">✚</div>
             <div class="card-title">Nuevo proyecto</div>
             <div class="card-desc">
-              Comienza un nuevo estudio seleccionando el tipo de atencion.
+              Comienza un nuevo estudio seleccionando el tipo de atención.
             </div>
             <div class="card-hint">Elegir tipo</div>
           </div>
@@ -93,12 +97,12 @@
             <div v-if="mostrarOpcionesNuevo" class="cards cards-inline cards-inline-float">
               <!-- Atención Abierta -->
               <div class="card card-primary card-mini" @click="iniciarAtencionAbierta">
-                <div class="card-title">Atencion abierta</div>
+                <div class="card-title">Atención abierta</div>
               </div>
 
               <!-- Atención Cerrada -->
               <div class="card card-primary card-mini" @click="iniciarAtencionCerrada">
-                <div class="card-title">Atencion cerrada</div>
+                <div class="card-title">Atención cerrada</div>
               </div>
             </div>
           </transition>
@@ -439,10 +443,20 @@ function iniciarAtencionCerrada() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 48px;
-  margin-bottom: 24px;
+  gap: 0;
+  margin: 0 auto 24px auto;
   height: 160px;
+  width: 100%;
 }
+
+.hero-logo-side {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+.hero-logo-side--left  { justify-content: flex-end;   padding-right: 40px; }
+.hero-logo-side--right { justify-content: flex-start;  padding-left: 40px; }
+
 
 .hero-logo {
   max-height: 100%;

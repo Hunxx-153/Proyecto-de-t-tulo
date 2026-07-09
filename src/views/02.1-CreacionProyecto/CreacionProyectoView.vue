@@ -21,13 +21,13 @@
 				<div class="collapse navbar-collapse" id="navbarSIGEMUV">
 					<ul class="navbar-nav ms-auto mb-2 mb-md-0">
 						<li class="nav-item">
-							<a class="nav-link d-flex align-items-center" href="#MODULOS"><i class="fa fa-th me-2"></i>Modulos</a>
+							<a class="nav-link d-flex align-items-center" href="https://sigem-uv.cl/__v2/#MODULOS" target="_blank"><i class="fa fa-th me-2"></i>Módulos</a>
 						</li>
 						<li class="nav-item">
-							<a class="nav-link" href="#PROYECTOS">Proyectos</a>
+							<a class="nav-link" href="https://sigem-uv.cl/__v2/#PROYECTOS" target="_blank">Proyectos</a>
 						</li>
 						<li class="nav-item">
-							<a class="nav-link" href="nosotros.php">Nosotros</a>
+							<a class="nav-link" href="https://sigem-uv.cl/__v2/nosotros.php" target="_blank">Nosotros</a>
 						</li>
 						<li class="nav-item">
 							<a class="nav-link" href="#footer">Contacto</a>
@@ -44,7 +44,7 @@
 			<section class="hero hero-compact">
 				<div class="hero-bg"></div>
 				<div class="hero-content">
-					<div class="hero-tag">MODULO EPHDEM</div>
+					<div class="hero-tag">MÓDULO EPHDEM</div>
 					<h1 class="hero-title">Estudio de Preinversión Hospitalaria</h1>
 					<p class="hero-sub">Crea un nuevo proyecto de estudio de preinversión hospitalaria.</p>
 				</div>
@@ -216,7 +216,7 @@ async function guardarProyecto() {
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
 				nombre_proyecto: nombreProyecto,
-				tipo_proyecto: 'Atencion cerrada',
+				tipo_proyecto: 'Atención cerrada',
 				usuario_id: userId,
 			})
 		})

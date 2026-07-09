@@ -20,13 +20,13 @@
 			<div class="collapse navbar-collapse" id="navbarSIGEMUV">
 				<ul class="navbar-nav ms-auto mb-2 mb-md-0">
 					<li class="nav-item">
-						<a class="nav-link d-flex align-items-center" href="#MODULOS"><i class="fa fa-th me-2"></i>Modulos</a>
+						<a class="nav-link d-flex align-items-center" href="https://sigem-uv.cl/__v2/#MODULOS" target="_blank"><i class="fa fa-th me-2"></i>Módulos</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="#PROYECTOS">Proyectos</a>
+						<a class="nav-link" href="https://sigem-uv.cl/__v2/#PROYECTOS" target="_blank">Proyectos</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="nosotros.php">Nosotros</a>
+						<a class="nav-link" href="https://sigem-uv.cl/__v2/nosotros.php" target="_blank">Nosotros</a>
 					</li>
 					<li class="nav-item">
 						<a class="nav-link" href="#footer">Contacto</a>
@@ -43,14 +43,14 @@
 		<section class="hero hero-compact">
 			<div class="hero-bg"></div>
 			<div class="hero-content">
-				<div class="hero-tag">MODULO EPHDEM</div>
+				<div class="hero-tag">MÓDULO EPHDEM</div>
 				<h1 class="hero-title">Estudio de Preinversión Hospitalaria</h1>
 				<p class="hero-sub">Configura los parámetros por prestación para calcular equipamiento médico.</p>
 			</div>
 		</section>
 
 		<!-- Tooltip flotante global -->
-		<div v-if="tooltipPosicion.visible" class="tooltip-flotante" :style="{ top: tooltipPosicion.top, left: tooltipPosicion.left }">
+		<div v-if="tooltipPosicion.visible" class="tooltip-flotante" :class="{ 'tooltip-flotante--left': tooltipPosicion.abrirIzquierda }" :style="{ top: tooltipPosicion.top, left: tooltipPosicion.left }">
 			<div class="tooltip-contenido">{{ tooltipPosicion.texto }}</div>
 			<div class="tooltip-flecha"></div>
 		</div>
@@ -80,7 +80,7 @@
 							@click="mostrarCalculadora = !mostrarCalculadora"
 						>
 							<span class="calculadora-icono" aria-hidden="true"><i class="fa-solid fa-calculator"></i></span>
-							<span class="calculadora-texto">Calculadora de dias cama para UPC</span>
+							<span class="calculadora-texto">Calculadora de días cama para UPC</span>
 							<i class="fa-solid fa-chevron-down calculadora-chevron" :class="{ 'is-open': mostrarCalculadora }"></i>
 						</button>
 						<section class="calculadora-panel" :class="{ 'is-open': mostrarCalculadora }">
@@ -133,7 +133,7 @@
 					</span>
 					<span class="instruccion-texto">
 						Completa las variables para cada prestación seleccionada. En el símbolo<span class="info-icon info-icon--demo" aria-hidden="true">i</span>
-						podrás ver en específico las características de cada parámetro, para el caso de la UPC, puedes usar la calculadora en base a coeficiente técnico para obtener los dias cama, si ya conoces ese valor, ingresalo en la demanda de la prestación <strong>"Día cama"</strong> correspondiente de UPC.
+						podrás ver en específico las características de cada parámetro, para el caso de la UPC, puedes usar la calculadora en base a coeficiente técnico para obtener los días cama, si ya conoces ese valor, ingrésalo en la demanda de la prestación <strong>"Día cama"</strong> correspondiente de UPC.
 					</span>
 				</div>
 			</header>
@@ -148,13 +148,13 @@
 					<table class="tabla-parametros">
 						<thead>
 							<tr>
-								<th>Prestacion</th>
+								<th>Prestación</th>
 								<th>
 									Demanda
 									<span class="info-icon" :data-tooltip="infoTexts.demanda" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
 								</th>
 								<th>
-									Dias al año disponibles
+									Días al año disponibles
 									<span class="info-icon" :data-tooltip="infoTexts.diasAnuales" @mouseenter="mostrarTooltip" @mouseleave="ocultarTooltip">i</span>
 								</th>
 								<th>
@@ -182,7 +182,7 @@
 									<input v-model.number="fila.demanda" type="number" min="0" step="1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-demanda`) }" @input="limpiarError(fila.id, 'demanda')" />
 								</td>
 								<td>
-									<input v-model.number="fila.diasAnuales" type="number" min="1" step="1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-diasAnuales`) }" @input="limpiarError(fila.id, 'diasAnuales')" />
+									<input v-model.number="fila.diasAnuales" type="number" min="1" max="366" step="1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-diasAnuales`) }" @input="limpiarError(fila.id, 'diasAnuales')" />
 								</td>
 								<td>
 									<input v-model.number="fila.tiempoProcedimiento" type="number" min="0" step="0.1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-tiempoProcedimiento`) }" @input="limpiarError(fila.id, 'tiempoProcedimiento')" />
@@ -191,7 +191,7 @@
 									<input v-model.number="fila.disponibilidad" type="number" min="0" max="100" step="0.1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-disponibilidad`) }" @input="limpiarError(fila.id, 'disponibilidad')" />
 								</td>
 								<td>
-									<input v-model.number="fila.jornadaLaboral" type="number" min="0" step="0.1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-jornadaLaboral`) }" @input="limpiarError(fila.id, 'jornadaLaboral')" />
+									<input v-model.number="fila.jornadaLaboral" type="number" min="0" max="24" step="0.1" :class="{ 'input-error': erroresCeldas.has(`${fila.id}-jornadaLaboral`) }" @input="limpiarError(fila.id, 'jornadaLaboral')" />
 								</td>
 							</tr>
 						</tbody>
@@ -251,7 +251,7 @@ const MINUTOS_POR_HORA = 60
 
 const infoTexts = {
 	demanda: 'Cantidad de atenciones proyectadas para esta prestación en el período.',
-	diasAnuales: 'Número de días disponibles al año para operar. En atención cerrada normalmente 365, pero editable.',
+	diasAnuales: 'Número de días disponibles al año para operar. Máximo 366 días (año bisiesto). En atención cerrada normalmente 365.',
 	tiempoProcedimiento: 'Minutos que dura el procedimiento.',
 	disponibilidad: 'Porcentaje de disponibilidad real del equipo para esta prestación.',
 	jornadaLaboral: 'Horas efectivas de operación al día. En atención cerrada normalmente 24, pero editable.',
@@ -262,7 +262,7 @@ const infoTexts = {
 }
 
 const filas = ref([])
-const tooltipPosicion = ref({ top: '0px', left: '0px', visible: false, texto: '' })
+const tooltipPosicion = ref({ top: '0px', left: '0px', visible: false, texto: '', abrirIzquierda: false })
 const erroresCeldas = ref(new Set())
 const errorValidacion = ref('')
 
@@ -283,11 +283,15 @@ const diasCamaCalculados = computed(() => {
 function mostrarTooltip(event) {
 	const span = event.target
 	const rect = span.getBoundingClientRect()
+	const TOOLTIP_WIDTH = 240
+	const MARGEN = 16
+	const abrirIzquierda = (rect.left + TOOLTIP_WIDTH + MARGEN) > window.innerWidth
 	tooltipPosicion.value = {
 		top: `${rect.bottom + 8}px`,
-		left: `${rect.left}px`,
+		left: abrirIzquierda ? `${rect.right - TOOLTIP_WIDTH}px` : `${rect.left}px`,
 		visible: true,
 		texto: span.getAttribute('data-tooltip'),
+		abrirIzquierda,
 	}
 }
 
@@ -359,6 +363,15 @@ function validarFilas() {
 				errores.add(`${fila.id}-${campo}`)
 			}
 		}
+		if (Number(fila.diasAnuales) > 366) {
+			errores.add(`${fila.id}-diasAnuales`)
+		}
+		if (Number(fila.disponibilidad) > 100) {
+			errores.add(`${fila.id}-disponibilidad`)
+		}
+		if (Number(fila.jornadaLaboral) > 24) {
+			errores.add(`${fila.id}-jornadaLaboral`)
+		}
 	}
 	erroresCeldas.value = errores
 	return errores.size === 0
@@ -372,7 +385,7 @@ function limpiarError(id, campo) {
 
 async function guardarYCalcular() {
 	if (!validarFilas()) {
-		errorValidacion.value = 'Hay celdas vacías o con valor 0. Ingresa un valor válido en los campos marcados en rojo antes de continuar.'
+		errorValidacion.value = 'Hay celdas vacías, con valor 0, o con valores fuera de rango (días al año no puede superar 366). Revisa los campos marcados en rojo.'
 		return
 	}
 	errorValidacion.value = ''
@@ -808,12 +821,17 @@ function cerrarSesion() {
 .tooltip-flecha {
 	position: absolute;
 	top: -7px;
-	left: 0;
+	left: 7px;
 	width: 0;
 	height: 0;
 	border-left: 7px solid transparent;
 	border-right: 7px solid transparent;
 	border-bottom: 7px solid $color-primario;
+}
+
+.tooltip-flotante--left .tooltip-flecha {
+	left: auto;
+	right: 7px;
 }
 
 .acciones-finales {

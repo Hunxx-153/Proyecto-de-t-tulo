@@ -20,11 +20,13 @@ mysqli_set_charset($conn, 'utf8mb4');
 // ===== CONSULTA =====
 function SIGEM_EPHDEM_CERRADA_GetPrestaciones(\mysqli $conn): ?array
 {
-    $sql = "SELECT id_prestacion, codigo_fonasa, nombre_prestacion,
-                   area_hospitalaria, subarea_hospitalaria, recinto_base_id,
-               tiempo_procedimiento
-            FROM EPHAC_Prestaciones
-            ORDER BY nombre_prestacion ASC";
+    $sql = "SELECT p.id_prestacion, p.codigo_fonasa, p.nombre_prestacion,
+                   p.area_hospitalaria, p.subarea_hospitalaria, p.recinto_base_id,
+                   r.nombre_recinto,
+               p.tiempo_procedimiento
+            FROM EPHAC_Prestaciones p
+            LEFT JOIN EPHAC_Recinto_Estandar r ON r.id_recinto = p.recinto_base_id
+            ORDER BY p.nombre_prestacion ASC";
 
     $result = mysqli_query($conn, $sql);
     if (!$result) {
@@ -40,6 +42,7 @@ function SIGEM_EPHDEM_CERRADA_GetPrestaciones(\mysqli $conn): ?array
             'area_hospitalaria'    => $row['area_hospitalaria'],
             'subarea_hospitalaria' => $row['subarea_hospitalaria'],
             'recinto_base_id'      => $row['recinto_base_id'] !== null ? (int) $row['recinto_base_id'] : null,
+            'nombre_recinto'       => $row['nombre_recinto'] ?? null,
             'tiempo_procedimiento' => $row['tiempo_procedimiento'] !== null ? (int) $row['tiempo_procedimiento'] : null,
         ];
     }

@@ -132,14 +132,14 @@
 					<div class="filtros-panel-mockup">
 						<div class="filtro-mockup filtro-buscar-mockup">
 							<div class="filtro-label-mockup">Buscar</div>
-							<div class="mockup-input"><span class="mockup-placeholder">Codigo o nombre</span></div>
+							<div class="mockup-input"><span class="mockup-placeholder">Código o nombre</span></div>
 						</div>
 						<div class="filtro-mockup">
-							<div class="filtro-label-mockup">Area</div>
+							<div class="filtro-label-mockup">Área</div>
 							<div class="mockup-select"><span>Pabellón quirúrgico</span> <i class="fa-solid fa-chevron-down"></i></div>
 						</div>
 						<div class="filtro-mockup">
-							<div class="filtro-label-mockup">Subarea</div>
+							<div class="filtro-label-mockup">Subárea</div>
 							<div class="mockup-select"><span>Todas</span> <i class="fa-solid fa-chevron-down"></i></div>
 						</div>
 						<div class="filtro-mockup">
@@ -224,7 +224,7 @@
 					<div class="mockup-calc-toggle-row">
 						<div class="mockup-calc-toggle">
 							<span class="mockup-calc-icono"><i class="fa-solid fa-calculator"></i></span>
-							<span class="mockup-calc-texto">Calculadora de dias cama para UPC</span>
+							<span class="mockup-calc-texto">Calculadora de días cama para UPC</span>
 							<i class="fa-solid fa-chevron-down mockup-calc-chevron"></i>
 						</div>
 						<p class="mockup-calc-desc">Herramienta auxiliar para calcular datos derivados necesarios para algunos tipos de prestación. Haga clic en el botón para desplegarla.</p>
@@ -374,7 +374,7 @@
 				<img src="https://sigem-uv.cl/_general/logos/LOGO_SIGEM-UV_HORIZONTAL-BLANCO.png" alt="SIGEM-UV" height="48" />
 			</div>
 			<div class="sigem-bottomline-center">
-				<div>Gral. Cruz 222, Valparaiso ::: +56 32 2603662</div>
+				<div>Gral. Cruz 222, Valparaíso ::: +56 32 2603662</div>
 				<div>
 					<a href="mailto:contacto@sigem-uv.cl" style="color:#fff">contacto@sigem-uv.cl</a> :::
 					<a href="https://biomedica.uv.cl" style="color:#fff" target="_blank">www.biomedica.uv.cl</a>
