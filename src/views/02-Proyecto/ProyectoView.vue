@@ -76,6 +76,15 @@
             <p class="panel-hint">Fuente: tabla proyectos</p>
           </div>
           <div class="panel-actions">
+            <div class="sort-control">
+              <label>Ordenar por:</label>
+              <select v-model="ordenSeleccionado" class="sort-select">
+                <option value="fecha_desc">Más recientes primero</option>
+                <option value="fecha_asc">Más antiguos primero</option>
+                <option value="alfabetico_asc">Alfabético (A-Z)</option>
+                <option value="alfabetico_desc">Alfabético (Z-A)</option>
+              </select>
+            </div>
             <button class="btn-primary" @click="toggleNuevoMenu">Nuevo proyecto</button>
             <div v-if="mostrarMenuNuevo" class="nuevo-menu">
               <button class="nuevo-menu-item" @click="seleccionarTipoProyecto('Atencion abierta')">Atencion abierta</button>
@@ -104,13 +113,12 @@
             <div>Tipo de proyecto</div>
             <div class="table-actions">Acciones</div>
           </div>
-          <div v-for="proyecto in proyectos" :key="proyecto.id" class="table-row">
+          <div v-for="proyecto in proyectosOrdenados" :key="proyecto.id" class="table-row">
             <div class="table-name">{{ proyecto.nombre_proyecto }}</div>
             <div>{{ proyecto.fecha_creacion }}</div>
             <div class="table-chip">{{ proyecto.tipo_proyecto }}</div>
             <div class="table-actions">
-              <button class="btn-secondary" @click="verProyecto(proyecto)">Ver</button>
-              <button class="btn-outline" @click="editarProyecto(proyecto)">Editar</button>
+              <button class="btn-primary" @click="verProyecto(proyecto)">Ver</button>
             </div>
           </div>
         </div>
@@ -146,7 +154,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -157,6 +165,22 @@ const mostrarMenuNuevo = ref(false)
 const proyectos = ref([])
 const cargando = ref(false)
 const errorCarga = ref('')
+const ordenSeleccionado = ref('fecha_desc')
+
+const proyectosOrdenados = computed(() => {
+  const lista = [...proyectos.value]
+  return lista.sort((a, b) => {
+    if (ordenSeleccionado.value === 'alfabetico_asc') {
+      return (a.nombre_proyecto || '').localeCompare(b.nombre_proyecto || '')
+    } else if (ordenSeleccionado.value === 'alfabetico_desc') {
+      return (b.nombre_proyecto || '').localeCompare(a.nombre_proyecto || '')
+    } else if (ordenSeleccionado.value === 'fecha_asc') {
+      return (a.id || a.id_proyecto || 0) - (b.id || b.id_proyecto || 0)
+    } else {
+      return (b.id || b.id_proyecto || 0) - (a.id || a.id_proyecto || 0)
+    }
+  })
+})
 
 onMounted(async () => {
   await cargarProyectos()
@@ -200,7 +224,10 @@ function seleccionarTipoProyecto(tipo) {
 }
 
 function verProyecto(proyecto) {
-  alert(`Visualizando: ${proyecto.nombre_proyecto}`)
+  const id = proyecto.id || proyecto.id_proyecto
+  localStorage.setItem('ephdem_proyecto_activo', id)
+  localStorage.setItem('ephdem_nombre_proyecto_activo', proyecto.nombre_proyecto)
+  router.push(`/resultados/${id}`)
 }
 
 function editarProyecto(proyecto) {
@@ -416,12 +443,36 @@ function cerrarSesion() {
   gap: 16px;
   margin-bottom: 18px;
 }
-.panel-actions {
-  position: relative;
-  display: flex;
-  justify-content: flex-end;
-}
-.nuevo-menu {
+  .panel-actions {
+    position: relative;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 16px;
+  }
+  .sort-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: $color-texto-secundario;
+  }
+  .sort-select {
+    padding: 6px 12px;
+    border: 1px solid $color-borde;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: $color-texto-principal;
+    background-color: $color-blanco;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+    &:focus {
+      border-color: $color-primario;
+    }
+  }
+  .nuevo-menu {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;

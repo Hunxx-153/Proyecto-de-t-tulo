@@ -31,19 +31,19 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/prestaciones',
+      path: '/prestaciones/:proyectoId?',
       name: 'prestaciones',
       component: () => import('@/views/03-Prestaciones/PrestacionesView.vue'),
       meta: { requiresAuth: true },
     },
     {
-      path: '/parametros',
+      path: '/parametros/:proyectoId?',
       name: 'parametros',
       component: () => import('@/views/04-Parametros/ParametrosView.vue'),
       meta: { requiresAuth: true },
     },
     {
-      path: '/resultados',
+      path: '/resultados/:proyectoId?',
       name: 'resultados',
       component: () => import('@/views/05-Resultados/ResultadosView.vue'),
       meta: { requiresAuth: true },

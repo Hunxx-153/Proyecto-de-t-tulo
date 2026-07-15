@@ -271,24 +271,61 @@
 					<div class="paso-icon"><i class="fa-solid fa-chart-bar"></i></div>
 					<div>
 						<h3 class="paso-title">Visualización de Resultados</h3>
-						<p class="paso-desc">Revise el resumen de equipamiento calculado. Puede filtrar por tipo de equipo, recinto o prestación, y exportar a Excel o PDF.</p>
+						<p class="paso-desc">Revise el resumen de equipamiento calculado. Puede filtrar por tipo de equipo, recinto o prestación, ver detalles de URPA y exportar el informe.</p>
 					</div>
 				</div>
 				<div class="paso-body">
 					<div class="mockup-resultados">
 						<div class="mockup-banner-res">
-							<div><span class="mockup-metric-val">3</span><span class="mockup-metric-lab">Pabellones</span></div>
-							<div><span class="mockup-metric-val">12</span><span class="mockup-metric-lab">Boxes UPC</span></div>
+							<div><span class="mockup-metric-val">244</span><span class="mockup-metric-lab">Equipos (total)</span></div>
 						</div>
-						<div class="mockup-export-row">
-							<div class="mockup-btn mockup-btn-excel"><i class="fa-solid fa-file-excel"></i> Excel</div>
-							<div class="mockup-btn mockup-btn-pdf"><i class="fa-solid fa-file-pdf"></i> PDF</div>
+						
+						<div class="mockup-res-block">
+							<div class="mockup-section-title">Recintos requeridos</div>
+							<div class="mockup-pill-container">
+								<div class="mockup-pill">Cubículo UTI <strong>1</strong></div>
+								<div class="mockup-pill">Cubículo UCI <strong>1</strong></div>
+							</div>
+						</div>
+
+						<div class="mockup-res-block">
+							<div class="mockup-accordion mockup-accordion-resumen">
+								<span class="mockup-acc-title">Resumen de equipos necesarios (total)</span>
+								<div class="mockup-acc-icons">
+									<div class="mockup-icon-box active"><i class="fa-solid fa-bars"></i></div>
+									<div class="mockup-icon-box"><i class="fa-solid fa-table-cells-large"></i></div>
+									<div class="mockup-icon-box"><i class="fa-solid fa-table-cells"></i></div>
+									<i class="fa-solid fa-chevron-down dropdown-chev"></i>
+								</div>
+							</div>
+						</div>
+
+						<div class="mockup-res-block">
+							<div class="mockup-section-title">Desglose de equipamiento</div>
+							<div class="mockup-acc-grid">
+								<div class="mockup-accordion mockup-accordion-small">
+									<span>Cubículo UTI <span class="acc-num">(20)</span></span>
+									<i class="fa-solid fa-chevron-down dropdown-chev"></i>
+								</div>
+								<div class="mockup-accordion mockup-accordion-small">
+									<span>Cubículo UCI <span class="acc-num">(26)</span></span>
+									<i class="fa-solid fa-chevron-down dropdown-chev"></i>
+								</div>
+								<div class="mockup-accordion mockup-accordion-normativa">
+									<span><i class="fa-solid fa-file-lines"></i> Equipamiento por normativa y/o guías <span class="acc-num">(50)</span></span>
+									<i class="fa-solid fa-chevron-down dropdown-chev"></i>
+								</div>
+							</div>
 						</div>
 					</div>
+
+					<div class="mockup-export-row" style="margin-top: 16px;">
+						<div class="mockup-btn mockup-btn-excel"><i class="fa-solid fa-file-excel"></i> Excel</div>
+						<div class="mockup-btn mockup-btn-pdf"><i class="fa-solid fa-file-pdf"></i> PDF</div>
+					</div>
 					<div class="paso-tips">
-						<div class="tip"><i class="fa-solid fa-circle-info tip-icon"></i> Use los filtros de la vista para segmentar el equipamiento por área o recinto.</div>
-						<div class="tip"><i class="fa-solid fa-circle-info tip-icon"></i> Los botones <strong>Excel</strong> y <strong>PDF</strong> exportarán el informe completo (próximamente).</div>
-						<div class="tip"><i class="fa-solid fa-circle-info tip-icon"></i> Puede <strong>Volver</strong> a parámetros para ajustar valores y recalcular.</div>
+						<div class="tip"><i class="fa-solid fa-circle-info tip-icon"></i> La vista de resultados presenta primero un resumen total y luego un desglose detallado, la cantidad de equipamiento se encuentra disponible en viñetas desplegables para un uso mas cómodo, solo haz click en ellas para ver la cantidad de equipamiento estimado.</div>
+						<div class="tip"><i class="fa-solid fa-circle-info tip-icon"></i> Puedes descargar el informe en formato excel o pdf, para ello debes presionar los botones dispuestos en la parte superior de la pagina.</div>
 					</div>
 				</div>
 			</section>
@@ -302,7 +339,7 @@
 					<div class="paso-icon"><i class="fa-solid fa-folder-open"></i></div>
 					<div>
 						<h3 class="paso-title">Gestión de Proyectos</h3>
-						<p class="paso-desc">Al ingresar al sistema verá su listado de proyectos. Puede <strong>visualizar</strong>, <strong>editar</strong> o <strong>crear nuevos proyectos</strong>, los cuales quedan ligados a su cuenta de usuario.</p>
+						<p class="paso-desc">Al ingresar al sistema verá su listado de proyectos. Puede <strong>visualizar</strong> o <strong>crear nuevos proyectos</strong>, los cuales quedan ligados a su cuenta de usuario. Además podrá ordenarlos por fecha o alfabéticamente.</p>
 					</div>
 				</div>
 				<div class="paso-body">
@@ -318,8 +355,7 @@
 							<span>12/06/2026</span>
 							<span><div class="mockup-chip">Atención cerrada</div></span>
 							<span class="mockup-actions">
-								<div class="mockup-btn mockup-btn-sm mockup-btn-sec">Ver</div>
-								<div class="mockup-btn mockup-btn-sm mockup-btn-out">Editar</div>
+								<div class="mockup-btn mockup-btn-sm mockup-btn-primary">Ver</div>
 							</span>
 						</div>
 						<div class="mockup-table-row">
@@ -327,15 +363,28 @@
 							<span>01/05/2026</span>
 							<span><div class="mockup-chip">Atención cerrada</div></span>
 							<span class="mockup-actions">
-								<div class="mockup-btn mockup-btn-sm mockup-btn-sec">Ver</div>
-								<div class="mockup-btn mockup-btn-sm mockup-btn-out">Editar</div>
+								<div class="mockup-btn mockup-btn-sm mockup-btn-primary">Ver</div>
 							</span>
 						</div>
 					</div>
 					<div class="paso-tips">
 						<div class="tip"><i class="fa-solid fa-circle-info tip-icon"></i> Solo verá los proyectos asociados a <strong>su cuenta de usuario</strong>.</div>
-						<div class="tip"><i class="fa-solid fa-circle-info tip-icon"></i> Use <strong>Ver</strong> para abrir un proyecto existente y continuar su flujo.</div>
-						<div class="tip"><i class="fa-solid fa-circle-info tip-icon"></i> Use <strong>Editar</strong> para modificar los datos básicos del proyecto.</div>
+						<div class="tip"><i class="fa-solid fa-circle-info tip-icon"></i> Use <strong>Ver</strong> para abrir un proyecto existente y visualizar los resultados calculados.</div>
+						<div class="tip"><i class="fa-solid fa-circle-info tip-icon"></i> Use el selector de orden para organizar sus proyectos por los más recientes, antiguos o alfabéticamente.</div>
+					</div>
+
+					<h4 class="sub-title-mockup"><i class="fa-solid fa-share-nodes"></i> Navegación y Edición del Proyecto</h4>
+					<p class="paso-desc">Una vez que ingrese a <strong>Ver</strong> un proyecto, encontrará en la barra superior botones para re-ajustar su configuración en cualquier momento:</p>
+					
+					<div class="mockup-action-cards">
+						<div class="mockup-action-card">
+							<div class="mockup-btn mockup-btn-primary"><i class="fa-solid fa-sliders"></i> Editar parámetros</div>
+							<p>Permite regresar a la tabla de configuración para ajustar las variables numéricas sin crear un nuevo proyecto.</p>
+						</div>
+						<div class="mockup-action-card">
+							<div class="mockup-btn mockup-btn-primary"><i class="fa-solid fa-list-check"></i> Modificar prestaciones</div>
+							<p>Permite volver a la pantalla de selección para agregar o quitar prestaciones del proyecto actual.</p>
+						</div>
 					</div>
 				</div>
 			</section>
@@ -779,13 +828,55 @@ function cerrarSesion() {
 	grid-template-columns: 2fr 1fr 1.2fr 1.6fr 1fr 1fr !important;
 }
 
-.mockup-resultados { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
+/* Paso 4 - Resultados Mockup */
+.mockup-resultados { display: flex; flex-direction: column; gap: 16px; width: 100%; }
 .mockup-banner-res {
-	display: flex; gap: 24px; align-items: baseline;
-	background: $color-primario; border-radius: 12px; padding: 16px 24px; flex: 1 1 auto;
+	display: flex; gap: 20px; align-items: baseline;
+	background: $color-primario; border-radius: 12px; padding: 14px 20px;
 }
-.mockup-metric-val { font-size: 1.6rem; font-weight: 700; color: $color-blanco; }
-.mockup-metric-lab { font-size: 0.82rem; color: rgba($color-blanco, 0.7); margin-left: 6px; }
+.mockup-metric-val { font-size: 1.5rem; font-weight: 700; color: $color-blanco; }
+.mockup-metric-lab { font-size: 0.9rem; color: rgba(255, 255, 255, 0.8); margin-left: 6px; }
+
+.mockup-res-block { background: $color-blanco; border: 1px solid $color-borde; border-radius: 10px; padding: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.02); }
+.mockup-section-title { font-size: 0.95rem; font-weight: 700; color: $color-texto-principal; margin-bottom: 12px; }
+
+.mockup-pill-container { display: flex; flex-wrap: wrap; gap: 12px; }
+.mockup-pill {
+	background: rgba(0, 60, 88, 0.05); border: 1px solid rgba(0, 60, 88, 0.1); border-radius: 999px;
+	padding: 6px 16px; font-size: 0.9rem; color: $color-primario; display: flex; align-items: center; gap: 8px; font-weight: 500;
+}
+.mockup-pill strong { font-size: 1.1rem; }
+
+.mockup-accordion {
+	background: rgba(0, 60, 88, 0.03); border: 1px solid rgba(0, 60, 88, 0.08); border-radius: 8px;
+	padding: 10px 16px; display: flex; justify-content: space-between; align-items: center;
+	color: $color-primario; font-weight: 600; font-size: 0.9rem;
+}
+.mockup-accordion-resumen { padding: 8px 16px; }
+.mockup-acc-title { font-size: 0.95rem; }
+.mockup-acc-icons { display: flex; align-items: center; gap: 8px; }
+.mockup-icon-box { padding: 4px 6px; border-radius: 4px; color: rgba(0, 60, 88, 0.5); font-size: 1.1rem; }
+.mockup-icon-box.active { background: $color-primario; color: $color-blanco; }
+.dropdown-chev { color: rgba(0, 60, 88, 0.5); margin-left: 10px; }
+
+.mockup-acc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.acc-num { color: rgba(0, 60, 88, 0.6); font-weight: 400; margin-left: 4px; }
+.mockup-accordion-normativa {
+	background: rgba(255, 152, 0, 0.08); border: 1px solid rgba(255, 152, 0, 0.2); color: #d35400;
+}
+.mockup-accordion-normativa .acc-num { color: rgba(211, 84, 0, 0.7); }
+.mockup-accordion-normativa .dropdown-chev { color: rgba(211, 84, 0, 0.5); }
+.mt-2 { margin-top: 12px; }
+
+/* Paso 5 - Gestión Mockup */
+.sub-title-mockup { font-size: 1.1rem; font-weight: 700; color: $color-primario; margin-top: 24px; margin-bottom: 8px; border-top: 1px solid $color-borde; padding-top: 20px; }
+.mockup-action-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+.mockup-action-card {
+	background: rgba(0, 60, 88, 0.02); border: 1px dashed rgba(0, 60, 88, 0.2); border-radius: 8px; padding: 16px;
+	display: flex; flex-direction: column; align-items: flex-start; gap: 10px;
+}
+.mockup-action-card p { font-size: 0.85rem; color: $color-texto-secundario; margin: 0; line-height: 1.4; }
+
 .mockup-export-row { display: flex; gap: 10px; }
 
 .mockup-session {

@@ -56,6 +56,9 @@
 					<div class="nav-buttons">
 						<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
 						<button class="btn-back" type="button" @click="router.push('/inicio')"><i class="fa-solid fa-house-user"></i> Inicio</button>
+						<div class="nav-divider" v-if="proyectoIdActivo"></div>
+						<button class="btn-back" type="button" @click="volverAParametros" v-if="proyectoIdActivo"><i class="fa-solid fa-sliders"></i> Editar parámetros</button>
+						<button class="btn-back" type="button" @click="modificarPrestaciones" v-if="proyectoIdActivo"><i class="fa-solid fa-list-check"></i> Modificar prestaciones</button>
 					</div>
 					<div class="session-badge">
 						<i class="fa-solid fa-circle-user"></i>
@@ -125,7 +128,7 @@
 			</section>
 
 			<!-- NIVEL A: Resumen total de equipos -->
-			<section class="resumen-panel" v-if="!cargando && !error">
+			<section class="resumen-panel" :class="{ 'resumen-panel-cerrado': !resumenAbierto }" v-if="!cargando && !error">
 				<div class="panel-title panel-title-toggle" @click="resumenAbierto = !resumenAbierto">
 					<span>Resumen de equipos necesarios (total)</span>
 					<div class="vista-toggle-group" @click.stop>
@@ -209,7 +212,7 @@
 
 			<!-- NIVEL B: Equipos por recinto (tarjetas colapsables) -->
 			<section class="desglose-panel" v-if="!cargando && !error">
-				<div class="panel-title">Equipamiento por recinto</div>
+				<div class="panel-title">Desglose de equipamiento</div>
 				<div class="desglose-section">
 					<div v-if="recintosAgrupados.length === 0" class="lista-vacia">Sin equipos por recinto para este filtro.</div>
 					<div v-else class="recintos-grid">
@@ -259,10 +262,7 @@
 							</div>
 						</div>
 					</div>
-					<p class="nota-recinto">
-						Nota: la suma de un mismo equipo entre recintos puede no coincidir con el total del resumen.
-						El total (arriba) es la cantidad final real; este desglose muestra donde se ubica cada equipo.
-					</p>
+
 				</div>
 
 				<!-- Demanda compartida: equipos que cruzan mas de un recinto -->
@@ -289,9 +289,9 @@
 					</p>
 				</div>
 
-				<!-- Equipamiento requerido por normativa y/o guías + Prestaciones -->
+				<!-- Equipamiento requerido por normativa y/o guías + Prestaciones + URPA -->
 				<div
-					v-if="equiposNormativa.length > 0 || equiposPrestaciones.length > 0"
+					v-if="equiposNormativa.length > 0 || equiposPrestaciones.length > 0 || (urpaRaw && urpaRaw.nro_salas > 0)"
 					class="recintos-grid recintos-grid-extra"
 				>
 					<!-- Tarjeta Normativa -->
@@ -341,6 +341,33 @@
 							</div>
 						</div>
 					</div>
+
+					<!-- Tarjeta URPA -->
+					<div v-if="urpaRaw && urpaRaw.nro_salas > 0" class="recinto-card">
+						<div class="recinto-title recinto-title-toggle recinto-title-urpa" @click="urpaAbierta = !urpaAbierta">
+							<span>
+								<i class="fa-solid fa-bed-pulse" style="margin-right:6px;"></i>
+								{{ urpaRaw.nombre_recinto }}
+								<span class="recinto-count">({{ urpaRaw.equipos.length }})</span>
+							</span>
+							<i class="fa-solid" :class="urpaAbierta ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+						</div>
+						<div class="recinto-body" v-show="urpaAbierta">
+							<div style="padding: 12px 14px; font-size: 0.95rem; color: #555; border-bottom: 1px solid #e0e0e0;">
+								<strong>Resumen:</strong> {{ urpaRaw.nro_camillas }} camillas distribuidas en {{ urpaRaw.nro_salas }} sala(s), derivadas de {{ urpaRaw.nro_pabellones }} pabellones.
+							</div>
+							<div class="tabla-mini">
+								<div class="tabla-mini-head">
+									<span>Equipo</span>
+									<span class="tabla-mini-cantidad">Total</span>
+								</div>
+								<div v-for="item in urpaRaw.equipos" :key="item.equipo_id" class="tabla-mini-row">
+									<span>{{ item.nombre_equipo }}</span>
+									<span class="tabla-mini-cantidad">{{ item.cantidad }}</span>
+								</div>
+							</div>
+						</div>
+					</div>
 				</div>
 			</section>
 		</main>
@@ -375,11 +402,14 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
+
+const urpaRaw = ref(null)
 
 const nombreProyecto = ref('Proyecto seleccionado')
 const proyectoIdActivo = ref(null)
@@ -409,6 +439,7 @@ const recintoAbierto = ref({})   // { [recintoId]: boolean }
 const subnormaAbierto = ref({})  // { [recintoId]: boolean }
 const normativaAbierta = ref(false)
 const prestacionesAbierta = ref(false)
+const urpaAbierta = ref(false)
 
 // Etiqueta legible para cada origen del calculo.
 function etiquetaOrigen(origen) {
@@ -426,9 +457,38 @@ function normalizar(str) {
 	return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
 }
 
+// Consolidado de equipos base + URPA
+const equiposConsolidados = computed(() => {
+	const base = equipos.value || []
+	const urpa = urpaRaw.value?.equipos || []
+
+	if (urpa.length === 0) return base
+
+	const map = new Map()
+	base.forEach(e => {
+		map.set(e.equipo_id, { ...e })
+	})
+
+	urpa.forEach(e => {
+		if (map.has(e.equipo_id)) {
+			const existente = map.get(e.equipo_id)
+			existente.cantidad += e.cantidad
+		} else {
+			map.set(e.equipo_id, {
+				equipo_id: e.equipo_id,
+				nombre_equipo: e.nombre_equipo,
+				cantidad: e.cantidad,
+				origenes: { urpa: true }
+			})
+		}
+	})
+
+	return Array.from(map.values())
+})
+
 // Total de unidades de equipo (suma de todas las cantidades del Nivel A).
 const totalUnidadesEquipos = computed(() =>
-	equipos.value.reduce((acc, e) => acc + (e.cantidad || 0), 0)
+	equiposConsolidados.value.reduce((acc, e) => acc + (e.cantidad || 0), 0)
 )
 
 // Conteo de pabellones/boxes por recinto para los chips.
@@ -463,7 +523,7 @@ const opcionesRecinto = computed(() =>
 // NIVEL A — Resumen total, con filtros aplicados.
 const resumenEquipos = computed(() => {
 	const texto = normalizar(filtros.value.texto.trim())
-	return equipos.value
+	return equiposConsolidados.value
 		.filter((e) => (e.cantidad || 0) > 0)
 		.filter((e) => !texto || normalizar(e.nombre_equipo).includes(texto))
 })
@@ -547,7 +607,34 @@ function toggleSubNorma(id) {
 	subnormaAbierto.value = { ...subnormaAbierto.value, [id]: !subnormaAbierto.value[id] }
 }
 
-onMounted(() => {
+function aplicarDatos(datos) {
+	proyectoIdActivo.value = datos.proyecto_id ?? null
+
+	pabellones.value = datos.pabellones?.total ?? 0
+	boxes.value = datos.boxes?.total ?? 0
+
+	equipos.value = datos.equipamiento?.equipos ?? []
+	porRecinto.value = datos.equipamiento?.por_recinto ?? {}
+	demandaCompartidaRaw.value = datos.equipamiento?.demanda_compartida ?? []
+	pabellonesPorRecintoRaw.value = datos.pabellones?.pabellones_por_recinto ?? {}
+	boxesPorRecintoRaw.value = datos.boxes?.por_recinto ?? {}
+	urpaRaw.value = datos.urpa ?? null
+
+	if (datos.nombre_proyecto) {
+		nombreProyecto.value = datos.nombre_proyecto
+		localStorage.setItem('ephdem_nombre_proyecto_activo', datos.nombre_proyecto)
+	} else {
+		nombreProyecto.value = localStorage.getItem('ephdem_nombre_proyecto_activo') || 'Desconocido'
+	}
+
+	if (datos.proyecto_id) {
+		localStorage.setItem('ephdem_proyecto_activo', datos.proyecto_id)
+	}
+
+	cargando.value = false
+}
+
+function cargarDesdeLocalStorage() {
 	const raw = localStorage.getItem('ephdem_resultado_calculo')
 	if (!raw) {
 		error.value = 'No hay resultados disponibles. Vuelve a parametros y calcula.'
@@ -556,32 +643,52 @@ onMounted(() => {
 	}
 	try {
 		const parsed = JSON.parse(raw)
-		// Soporta tanto el objeto { ok, datos } completo como solo datos.
 		const datos = parsed.datos ? parsed.datos : parsed
-
-		proyectoIdActivo.value = datos.proyecto_id ?? null
-
-		pabellones.value = datos.pabellones?.total ?? 0
-		boxes.value = datos.boxes?.total ?? 0
-
-		equipos.value = datos.equipamiento?.equipos ?? []
-		porRecinto.value = datos.equipamiento?.por_recinto ?? {}
-		demandaCompartidaRaw.value = datos.equipamiento?.demanda_compartida ?? []
-		pabellonesPorRecintoRaw.value = datos.pabellones?.pabellones_por_recinto ?? {}
-		boxesPorRecintoRaw.value = datos.boxes?.por_recinto ?? {}
-
-		if (datos.nombre_proyecto) {
-			nombreProyecto.value = datos.nombre_proyecto
-		} else {
-			nombreProyecto.value = localStorage.getItem('ephdem_nombre_proyecto_activo') || 'Desconocido'
-		}
-
-		cargando.value = false
+		aplicarDatos(datos)
 	} catch (e) {
 		error.value = 'Error al leer los resultados.'
 		cargando.value = false
 	}
+}
+
+async function cargarDesdeServidor(proyectoId) {
+	const usuarioId = authStore.usuarioId
+	if (!usuarioId) {
+		error.value = 'No hay sesión activa.'
+		cargando.value = false
+		return
+	}
+	try {
+		const url = `${import.meta.env.VITE_API_BASE}/obtener_resultados_proyecto.php?proyecto_id=${proyectoId}&usuario_id=${usuarioId}`
+		const resp = await fetch(url)
+		const json = await resp.json()
+		if (!resp.ok || !json.ok) {
+			error.value = json.error || 'Error al cargar resultados del servidor.'
+			cargando.value = false
+		} else {
+			aplicarDatos(json.datos)
+		}
+	} catch (e) {
+		error.value = 'Error de red al intentar cargar resultados.'
+		cargando.value = false
+	}
+}
+
+onMounted(() => {
+	if (route.params.proyectoId) {
+		cargarDesdeServidor(route.params.proyectoId)
+	} else {
+		cargarDesdeLocalStorage()
+	}
 })
+
+function volverAParametros() {
+	router.push(`/parametros/${proyectoIdActivo.value}`)
+}
+
+function modificarPrestaciones() {
+	router.push(`/prestaciones/${proyectoIdActivo.value}`)
+}
 
 function volverAtras() {
 	// Limpia los resultados previos del caché para evitar datos residuales al re-calcular
@@ -752,8 +859,31 @@ function exportarPdf() {
 }
 .nav-buttons {
 	display: flex;
-	gap: 10px;
+	gap: 12px;
+	align-items: center;
+}
+.nav-divider {
+	width: 1px;
+	height: 24px;
+	background-color: #cbd5e1;
+	margin: 0 4px;
+}
+.btn-back {
 	align-self: flex-start;
+	background: $color-primario;
+	color: $color-blanco;
+	border: 1px solid $color-primario;
+	border-radius: 999px;
+	padding: 6px 12px;
+	font-weight: 600;
+	cursor: pointer;
+	margin-bottom: 6px;
+	transition: background 0.2s ease, border 0.2s ease;
+
+	&:hover {
+		background: mix($color-blanco, $color-primario, 6%);
+		border-color: mix($color-blanco, $color-primario, 6%);
+	}
 }
 .session-badge {
 	display: flex;
@@ -954,6 +1084,13 @@ function exportarPdf() {
 	transition: background 0.15s;
 	&:hover { background: #ddeaf4; }
 }
+.resumen-panel-cerrado {
+	padding-bottom: 0 !important;
+}
+.resumen-panel-cerrado .panel-title-toggle {
+	margin-bottom: 0 !important;
+	border-radius: 14px !important;
+}
 
 /* Grupo de botones de selección de vista */
 .vista-toggle-group {
@@ -1069,9 +1206,10 @@ function exportarPdf() {
 	border-bottom: none;
 }
 .resumen-row-head {
-	background: #eef5f9;
+	background: #ddeaf4; /* Más oscuro para destacar */
 	font-weight: 700;
 	color: $color-primario;
+	font-size: 1.4rem;
 }
 .row-main {
 	display: flex;
@@ -1322,6 +1460,13 @@ function exportarPdf() {
 	border-left: 4px solid #8b5cf6;
 	i { color: #7c3aed; }
 	&:hover { background: #ede9fe; }
+}
+.recinto-title-urpa {
+	background: #e0f7fa;
+	color: #006064;
+	border-left: 4px solid #00bcd4;
+	i { color: #0097a7; }
+	&:hover { background: #b2ebf2; }
 }
 .recintos-grid-extra {
 	margin-top: 18px;

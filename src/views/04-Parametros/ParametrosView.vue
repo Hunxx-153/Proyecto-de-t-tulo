@@ -61,6 +61,8 @@
 					<div class="nav-buttons">
 						<button class="btn-back" type="button" @click="volverAtras"><i class="fa-solid fa-arrow-left"></i> Volver</button>
 						<button class="btn-back" type="button" @click="router.push('/inicio')"><i class="fa-solid fa-house-user"></i> Inicio</button>
+						<div class="nav-divider"></div>
+						<button class="btn-back" type="button" @click="irAPrestaciones"><i class="fa-solid fa-list-check"></i> Modificar prestaciones</button>
 					</div>
 					<div class="session-badge">
 						<i class="fa-solid fa-circle-user"></i>
@@ -127,12 +129,15 @@
 						</section>
 					</div>
 				</div>
+				<div class="proyecto-activo-badge">
+					<span class="badge-label">Proyecto en edición</span>
+					<span class="badge-name">{{ nombreProyectoActivo }}</span>
+				</div>
 				<div class="instruccion-indicator">
 					<span class="instruccion-icon-circle">
 						<i class="fa-solid fa-circle-info"></i>
 					</span>
 					<span class="instruccion-texto">
-						Se están agregando parámetros para el proyecto: <strong>{{ nombreProyectoActivo }}</strong>.<br>
 						Completa las variables para cada prestación seleccionada. En el símbolo<span class="info-icon info-icon--demo" aria-hidden="true">i</span>
 						podrás ver en específico las características de cada parámetro, para el caso de la UPC, puedes usar la calculadora en base a coeficiente técnico para obtener los días cama, si ya conoces ese valor, ingrésalo en la demanda de la prestación <strong>"Día cama"</strong> correspondiente de UPC.
 					</span>
@@ -241,10 +246,11 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const PRESTACIONES_STORAGE_KEY = 'ephdem_prestaciones_seleccionadas'
 const PARAMETROS_STORAGE_KEY = 'ephdem_parametros_prestaciones'
@@ -392,8 +398,8 @@ async function guardarYCalcular() {
 	}
 	errorValidacion.value = ''
 
-	// Leer el id del proyecto activo (guardado al crear el proyecto)
-	const idProyectoActual = localStorage.getItem('ephdem_proyecto_activo')
+	// Leer el id del proyecto activo (guardado al crear el proyecto o de la ruta)
+	const idProyectoActual = route.params.proyectoId || localStorage.getItem('ephdem_proyecto_activo')
 	if (!idProyectoActual) {
 		alert('No hay un proyecto activo. Vuelve a crear o seleccionar un proyecto.')
 		router.push('/crear-proyecto') // ajustar a la ruta real de creación
@@ -446,6 +452,16 @@ function volverAtras() {
 	}, 0)
 }
 
+function irAPrestaciones() {
+	// Guardar los parametros actuales para no perder el progreso si el usuario vuelve
+	localStorage.setItem(PARAMETROS_STORAGE_KEY, JSON.stringify(filas.value))
+	if (route.params.proyectoId) {
+		router.push(`/prestaciones/${route.params.proyectoId}`)
+	} else {
+		router.push('/prestaciones')
+	}
+}
+
 function cerrarCalculadoraSiCorresponde(event) {
 	const contenedor = calculadoraRef.value
 	if (!contenedor || !mostrarCalculadora.value) return
@@ -456,9 +472,53 @@ function limpiarCalculadora() {
 	calc.value = { coeficienteTecnico: null, puac: null, promedioEstancia: null }
 }
 
+async function cargarDesdeServidor(proyectoId) {
+	try {
+		const url = `${import.meta.env.VITE_API_BASE}/get_prestaciones_demanda.php?proyecto_id=${proyectoId}`
+		const resp = await fetch(url)
+		const json = await resp.json()
+
+		if (!resp.ok || !json.ok) {
+			alert(json.error || 'Error al cargar datos del proyecto.')
+			router.push('/proyectos')
+			return
+		}
+
+		filas.value = json.datos.map((item) => {
+			const vals = item.valores
+			const defs = item.defaults || {}
+
+			return {
+				id: item.id_prestacion,
+				codigo_fonasa: item.codigo_fonasa || '',
+				nombre_prestacion: item.nombre_prestacion,
+				demanda: vals ? vals.demanda_anual : 0,
+				diasAnuales: vals ? vals.dias_laborales : (defs.dias_laborales ?? 365),
+				tiempoProcedimiento: vals?.tiempo_procedimiento ?? defs?.tiempo_procedimiento ?? item.tiempo_procedimiento ?? MINUTOS_POR_HORA,
+				disponibilidad: vals ? (vals.disponibilidad * 100) : (defs.disponibilidad ? defs.disponibilidad * 100 : 100),
+				jornadaLaboral: vals ? vals.jornada_efectiva : (defs.jornada_efectiva ?? 24)
+			}
+		})
+	} catch (e) {
+		console.error(e)
+		alert('Error de red al intentar cargar datos del proyecto.')
+	}
+}
+
 onMounted(() => {
 	nombreProyectoActivo.value = localStorage.getItem('ephdem_nombre_proyecto_activo') || 'Desconocido'
-	cargarDatos()
+	
+	if (route.params.proyectoId) {
+		if (localStorage.getItem('ephdem_origen_edicion') === 'prestaciones') {
+			localStorage.removeItem('ephdem_origen_edicion')
+			cargarDatos()
+		} else {
+			cargarDesdeServidor(route.params.proyectoId)
+		}
+	} else {
+		cargarDatos()
+	}
+	
 	document.addEventListener('pointerdown', cerrarCalculadoraSiCorresponde)
 })
 
@@ -590,9 +650,14 @@ function cerrarSesion() {
 }
 .nav-buttons {
 	display: flex;
-	gap: 10px;
-	align-self: flex-start;
-	margin-bottom: 0;
+	gap: 12px;
+	align-items: center;
+}
+.nav-divider {
+	width: 1px;
+	height: 24px;
+	background-color: #cbd5e1;
+	margin: 0 4px;
 }
 .session-badge {
 	display: flex;
@@ -654,7 +719,29 @@ function cerrarSesion() {
 	border-radius: 10px;
 	padding: 10px 16px;
 }
-
+.proyecto-activo-badge {
+	display: inline-flex;
+	align-items: center;
+	align-self: flex-start;
+	background: rgba(0, 60, 88, 0.05);
+	border-radius: 6px;
+	padding: 6px 12px;
+	margin-top: 6px;
+	border: 1px solid rgba(0, 60, 88, 0.1);
+}
+.badge-label {
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: rgba(0, 60, 88, 0.6);
+	margin-right: 8px;
+	letter-spacing: 0.5px;
+}
+.badge-name {
+	font-size: 0.95rem;
+	font-weight: 700;
+	color: $color-primario;
+}
 .instruccion-icon-circle {
 	display: flex;
 	align-items: center;

@@ -98,6 +98,17 @@
 			<section class="proyectos-panel">
 				<div class="panel-header">
 					<h3 class="panel-title">Mis proyectos</h3>
+					<div class="panel-actions">
+						<div class="sort-control">
+							<label>Ordenar por:</label>
+							<select v-model="ordenSeleccionado" class="sort-select">
+								<option value="fecha_desc">Más recientes primero</option>
+								<option value="fecha_asc">Más antiguos primero</option>
+								<option value="alfabetico_asc">Alfabético (A-Z)</option>
+								<option value="alfabetico_desc">Alfabético (Z-A)</option>
+							</select>
+						</div>
+					</div>
 				</div>
 				<div v-if="cargandoProyectos" class="proyectos-estado">
 					<i class="fa-solid fa-spinner fa-spin"></i> Cargando proyectos...
@@ -112,13 +123,12 @@
 						<div>Tipo de proyecto</div>
 						<div class="table-actions">Acciones</div>
 					</div>
-					<div v-for="proyecto in proyectosPrevios" :key="proyecto.id" class="table-row">
+					<div v-for="proyecto in proyectosPreviosOrdenados" :key="proyecto.id" class="table-row">
 						<div class="table-name">{{ proyecto.nombre_proyecto }}</div>
 						<div>{{ proyecto.fecha_creacion }}</div>
 						<div class="table-chip">{{ proyecto.tipo_proyecto }}</div>
 						<div class="table-actions">
-							<button class="btn-secondary" type="button" @click="verProyecto(proyecto)">Ver</button>
-							<button class="btn-outline" type="button" @click="editarProyecto(proyecto)">Editar</button>
+							<button class="btn-primary" type="button" @click="verProyecto(proyecto)">Ver</button>
 						</div>
 					</div>
 				</div>
@@ -156,7 +166,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -168,7 +178,23 @@ const formulario = ref({
 })
 
 const proyectosPrevios = ref([])
-const cargandoProyectos = ref(false)
+const cargandoProyectos = ref(true)
+const ordenSeleccionado = ref('fecha_desc')
+
+const proyectosPreviosOrdenados = computed(() => {
+	const lista = [...proyectosPrevios.value]
+	return lista.sort((a, b) => {
+		if (ordenSeleccionado.value === 'alfabetico_asc') {
+			return (a.nombre_proyecto || '').localeCompare(b.nombre_proyecto || '')
+		} else if (ordenSeleccionado.value === 'alfabetico_desc') {
+			return (b.nombre_proyecto || '').localeCompare(a.nombre_proyecto || '')
+		} else if (ordenSeleccionado.value === 'fecha_asc') {
+			return (a.id || a.id_proyecto || 0) - (b.id || b.id_proyecto || 0)
+		} else {
+			return (b.id || b.id_proyecto || 0) - (a.id || a.id_proyecto || 0)
+		}
+	})
+})
 
 onMounted(async () => {
 	await cargarProyectosPrevios()
@@ -264,7 +290,10 @@ function cerrarSesion() {
 }
 
 function verProyecto(proyecto) {
-	alert(`Visualizando: ${proyecto.nombre_proyecto}`)
+	const id = proyecto.id || proyecto.id_proyecto
+	localStorage.setItem('ephdem_proyecto_activo', id)
+	localStorage.setItem('ephdem_nombre_proyecto_activo', proyecto.nombre_proyecto)
+	router.push(`/resultados/${id}`)
 }
 
 function editarProyecto(proyecto) {
@@ -621,7 +650,37 @@ function editarProyecto(proyecto) {
 	box-shadow: 0 10px 22px $color-sombra-suave;
 }
 .panel-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
 	margin-bottom: 20px;
+}
+.panel-actions {
+	display: flex;
+	justify-content: flex-end;
+}
+.sort-control {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 0.9rem;
+	color: $color-texto-secundario;
+}
+.sort-select {
+	padding: 6px 12px;
+	border: 1px solid $color-borde;
+	border-radius: 8px;
+	font-family: 'Inter', sans-serif;
+	font-size: 0.9rem;
+	color: $color-texto-principal;
+	background-color: $color-blanco;
+	cursor: pointer;
+	outline: none;
+	transition: border-color 0.2s;
+	&:focus {
+		border-color: $color-primario;
+	}
 }
 .panel-title {
 	font-size: 1.25rem;
@@ -669,8 +728,8 @@ function editarProyecto(proyecto) {
 	gap: 10px;
 	justify-content: flex-end;
 }
-.btn-secondary {
-	background: $color-secundario;
+.btn-primary {
+	background: $color-primario;
 	color: $color-blanco;
 	border: none;
 	border-radius: 8px;

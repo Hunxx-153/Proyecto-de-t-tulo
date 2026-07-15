@@ -90,12 +90,15 @@
 						</section>
 					</div>
 				</div>
+				<div class="proyecto-activo-badge">
+					<span class="badge-label">Proyecto en edición</span>
+					<span class="badge-name">{{ nombreProyectoActivo }}</span>
+				</div>
 				<div class="instruccion-indicator">
 					<span class="instruccion-icon-circle">
 						<i class="fa-solid fa-circle-info"></i>
 					</span>
 					<span class="instruccion-texto">
-					Se están agregando prestaciones para el proyecto: <strong>{{ nombreProyectoActivo }}</strong>.<br>
 					Selecciona las prestaciones que se asociarán al proyecto: usa
 					<span class="instruccion-badge instruccion-badge--agregar"><i class="fa-solid fa-plus"></i></span>
 					para agregar y
@@ -217,11 +220,12 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted, onBeforeUnmount, ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
 const STORAGE_KEY = 'ephdem_prestaciones_seleccionadas'
 const PRESTACIONES_URL = `${import.meta.env.VITE_API_BASE}/get_prestaciones.php`
@@ -311,8 +315,43 @@ const prestacionesSeleccionadas = computed(() => {
 onMounted(async () => {
 	nombreProyectoActivo.value = localStorage.getItem('ephdem_nombre_proyecto_activo') || 'Desconocido'
 	await cargarPrestaciones()
-	cargarSeleccionadas()
+	
+	if (route.params.proyectoId) {
+		await cargarDesdeServidor(route.params.proyectoId)
+	} else {
+		cargarSeleccionadas()
+	}
 })
+
+async function cargarDesdeServidor(proyectoId) {
+	try {
+		const url = `${import.meta.env.VITE_API_BASE}/get_prestaciones_demanda.php?proyecto_id=${proyectoId}`
+		const resp = await fetch(url)
+		const json = await resp.json()
+
+		if (!resp.ok || !json.ok) {
+			alert(json.error || 'Error al cargar datos del proyecto.')
+			return
+		}
+
+		const idsGuardados = new Set(json.datos.map((item) => item.id_prestacion))
+		seleccionadas.value = prestaciones.value.filter((p) => idsGuardados.has(p.id))
+
+		const params = json.datos.map((item) => ({
+			id: item.id_prestacion,
+			demanda: item.valores?.demanda_anual ?? 0,
+			diasAnuales: item.valores?.dias_laborales ?? item.defaults?.dias_laborales ?? 365,
+			disponibilidad: item.valores ? (item.valores.disponibilidad * 100) : (item.defaults?.disponibilidad ? item.defaults.disponibilidad * 100 : 100),
+			jornadaLaboral: item.valores?.jornada_efectiva ?? item.defaults?.jornada_efectiva ?? 24,
+			tiempoProcedimiento: item.valores?.tiempo_procedimiento ?? item.defaults?.tiempo_procedimiento ?? item.tiempo_procedimiento ?? 60
+		}))
+		localStorage.setItem('ephdem_parametros_prestaciones', JSON.stringify(params))
+		localStorage.setItem('ephdem_origen_edicion', 'prestaciones')
+	} catch (e) {
+		console.error('Error al cargar prestaciones del proyecto:', e)
+		alert('Error de red al intentar cargar datos del proyecto.')
+	}
+}
 
 async function cargarPrestaciones() {
 	isLoading.value = true
@@ -393,7 +432,11 @@ function guardarYConfirmar() {
 		return
 	}
 	localStorage.setItem(STORAGE_KEY, JSON.stringify(seleccionadas.value))
-	router.push('/parametros')
+	if (route.params.proyectoId) {
+		router.push(`/parametros/${route.params.proyectoId}`)
+	} else {
+		router.push('/parametros')
+	}
 }
 
 function volverAtras() {
@@ -610,6 +653,29 @@ function cerrarSesion() {
 	font-weight: 700;
 	color: $color-primario;
 	margin: 0;
+}
+.proyecto-activo-badge {
+	display: inline-flex;
+	align-items: center;
+	align-self: flex-start;
+	background: rgba(0, 60, 88, 0.05);
+	border-radius: 6px;
+	padding: 6px 12px;
+	margin-top: 6px;
+	border: 1px solid rgba(0, 60, 88, 0.1);
+}
+.badge-label {
+	font-size: 0.75rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	color: rgba(0, 60, 88, 0.6);
+	margin-right: 8px;
+	letter-spacing: 0.5px;
+}
+.badge-name {
+	font-size: 0.95rem;
+	font-weight: 700;
+	color: $color-primario;
 }
 .instruccion-indicator {
 	display: flex;
