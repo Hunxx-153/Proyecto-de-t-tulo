@@ -228,8 +228,15 @@ async function guardarProyecto() {
 			return
 		}
 
+		// Al crear un PROYECTO NUEVO, limpiamos cualquier selección que haya quedado en caché
+		// de una sesión anterior (para que inicie desde cero).
+		localStorage.removeItem('ephdem_prestaciones_seleccionadas')
+		localStorage.removeItem('ephdem_parametros_prestaciones')
+		localStorage.removeItem('ephdem_resultado_calculo')
+
 		// Guardar el ID del proyecto activo para usarlo en las siguientes vistas
 		localStorage.setItem('ephdem_proyecto_activo', result.datos.id_proyecto)
+		localStorage.setItem('ephdem_nombre_proyecto_activo', nombreProyecto)
 
 		// Redirigir a prestaciones
 		router.push('/prestaciones')
@@ -261,7 +268,9 @@ function verProyecto(proyecto) {
 }
 
 function editarProyecto(proyecto) {
-	alert(`Editando: ${proyecto.nombre_proyecto}`)
+	localStorage.setItem('ephdem_proyecto_activo', proyecto.id_proyecto)
+	localStorage.setItem('ephdem_nombre_proyecto_activo', proyecto.nombre_proyecto)
+	router.push('/prestaciones')
 }
 </script>
 

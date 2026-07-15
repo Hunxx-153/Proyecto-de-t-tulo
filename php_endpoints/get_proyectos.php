@@ -47,7 +47,7 @@ try {
     $proyectos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // Normalizar ids como enteros
-    $proyectos = array_map(function($p) {
+    $proyectos = array_map(function ($p) {
         $p['id'] = (int) $p['id_proyecto'];
         return $p;
     }, $proyectos);

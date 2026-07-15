@@ -43,9 +43,9 @@
 		<section class="hero hero-compact">
 			<div class="hero-bg"></div>
 			<div class="hero-content">
-				<div class="hero-tag">MÓDULO EPHDEM</div>
-				<h1 class="hero-title">Estudio de Preinversión Hospitalaria</h1>
-				<p class="hero-sub">Resultado de requerimiento de equipamiento para el proyecto.</p>
+				<div class="hero-tag">MODULO EPHDEM</div>
+				<h1 class="hero-title">Estudio de Preinversion Hospitalaria</h1>
+				<p class="hero-sub">Resumen de equipamiento calculado desde el back-end para el proyecto seleccionado.</p>
 			</div>
 		</section>
 
@@ -69,7 +69,7 @@
 				<div class="title-actions-row">
 					<div>
 						<h2 class="section-title">Resultados</h2>
-						<p class="section-subtitle">Resumen general y desglose por origen del equipamiento.</p>
+						<p class="section-subtitle">Resumen general y desglose por recinto del equipamiento.</p>
 					</div>
 					<div class="header-actions">
 						<button class="btn-export btn-export-excel" type="button" @click="exportarExcel"><i class="fa-solid fa-file-excel"></i> Excel</button>
@@ -89,37 +89,31 @@
 				<div class="banner-total" v-else-if="error">
 					<span class="metric-label" style="color:#ffaaaa">{{ error }}</span>
 				</div>
-				<div v-else style="display:flex; gap:32px; align-items:baseline;">
-					<div class="banner-total">
-						<span class="metric-value">{{ pabellones }}</span>
-						<span class="metric-label">Pabellones</span>
+				<div class="banner-total" v-else>
+					<span class="metric-value">{{ totalUnidadesEquipos }}</span>
+					<span class="metric-label">Equipos (total)</span>
+				</div>
+			</section>
+
+			<!-- Desglose de pabellones/boxes por recinto (si el back-end lo entrega) -->
+			<section v-if="!cargando && !error && (pabellonesPorRecinto.length || boxesPorRecinto.length)" class="recintos-conteo-panel">
+				<div class="panel-title">Recintos requeridos</div>
+				<div class="conteo-chips">
+					<div v-for="rec in pabellonesPorRecinto" :key="'pab-' + rec.id" class="conteo-chip">
+						<span class="chip-nombre">{{ rec.nombre }}</span>
+						<span class="chip-valor">{{ rec.cantidad }}</span>
 					</div>
-					<div class="banner-total">
-						<span class="metric-value">{{ boxes }}</span>
-						<span class="metric-label">Boxes UPC</span>
+					<div v-for="rec in boxesPorRecinto" :key="'box-' + rec.id" class="conteo-chip">
+						<span class="chip-nombre">{{ rec.nombre }}</span>
+						<span class="chip-valor">{{ rec.cantidad }}</span>
 					</div>
 				</div>
 			</section>
 
-			<section class="filtros-panel">
+			<section class="filtros-panel" v-if="!cargando && !error">
 				<div class="filtro filtro-buscar">
 					<label>Buscar equipo</label>
 					<input v-model="filtros.texto" type="text" placeholder="Nombre de equipo" />
-				</div>
-				<div class="filtro">
-					<label>Tipo de equipo</label>
-					<select v-model="filtros.tipo">
-						<option value="">Todos</option>
-						<option v-for="tipo in opcionesTipo" :key="tipo" :value="tipo">{{ tipo }}</option>
-					</select>
-				</div>
-				<div class="filtro">
-					<label>Origen del cálculo</label>
-					<select v-model="filtros.origen">
-						<option value="">Todos</option>
-						<option value="recinto">Equipos asociados a recintos</option>
-						<option value="especifico">Equipos específicos de prestación</option>
-					</select>
 				</div>
 				<div class="filtro">
 					<label>Recinto</label>
@@ -128,66 +122,222 @@
 						<option v-for="recinto in opcionesRecinto" :key="recinto" :value="recinto">{{ recinto }}</option>
 					</select>
 				</div>
-				<div class="filtro">
-					<label>Prestación</label>
-					<select v-model="filtros.prestacion">
-						<option value="">Todas</option>
-						<option v-for="prestacion in opcionesPrestacion" :key="prestacion" :value="prestacion">{{ prestacion }}</option>
-					</select>
-				</div>
 			</section>
 
-			<section class="resumen-panel">
-				<div class="panel-title">Resumen de equipos necesarios</div>
-				<div class="resumen-list">
+			<!-- NIVEL A: Resumen total de equipos -->
+			<section class="resumen-panel" v-if="!cargando && !error">
+				<div class="panel-title panel-title-toggle" @click="resumenAbierto = !resumenAbierto">
+					<span>Resumen de equipos necesarios (total)</span>
+					<div class="vista-toggle-group" @click.stop>
+						<!-- Lista -->
+						<button
+							class="vista-btn"
+							:class="{ 'vista-btn-active': vistaResumen === 'lista' }"
+							title="Vista lista"
+							@click="vistaResumen = 'lista'"
+						>
+							<svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+								<rect x="1" y="3" width="16" height="2.5" rx="1.2" fill="currentColor"/>
+								<rect x="1" y="7.75" width="16" height="2.5" rx="1.2" fill="currentColor"/>
+								<rect x="1" y="12.5" width="16" height="2.5" rx="1.2" fill="currentColor"/>
+							</svg>
+						</button>
+						<!-- Mosaico 2 col -->
+						<button
+							class="vista-btn"
+							:class="{ 'vista-btn-active': vistaResumen === 'mosaico2' }"
+							title="Mosaico 2 columnas"
+							@click="vistaResumen = 'mosaico2'"
+						>
+							<svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+								<rect x="1" y="1" width="7" height="7" rx="1.5" fill="currentColor"/>
+								<rect x="10" y="1" width="7" height="7" rx="1.5" fill="currentColor"/>
+								<rect x="1" y="10" width="7" height="7" rx="1.5" fill="currentColor"/>
+								<rect x="10" y="10" width="7" height="7" rx="1.5" fill="currentColor"/>
+							</svg>
+						</button>
+						<!-- Mosaico 3 col -->
+						<button
+							class="vista-btn"
+							:class="{ 'vista-btn-active': vistaResumen === 'mosaico3' }"
+							title="Mosaico 3 columnas"
+							@click="vistaResumen = 'mosaico3'"
+						>
+							<svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+								<rect x="1" y="1" width="4.5" height="7" rx="1.2" fill="currentColor"/>
+								<rect x="6.75" y="1" width="4.5" height="7" rx="1.2" fill="currentColor"/>
+								<rect x="12.5" y="1" width="4.5" height="7" rx="1.2" fill="currentColor"/>
+								<rect x="1" y="10" width="4.5" height="7" rx="1.2" fill="currentColor"/>
+								<rect x="6.75" y="10" width="4.5" height="7" rx="1.2" fill="currentColor"/>
+								<rect x="12.5" y="10" width="4.5" height="7" rx="1.2" fill="currentColor"/>
+							</svg>
+						</button>
+						<i class="fa-solid vista-chevron" :class="resumenAbierto ? 'fa-chevron-up' : 'fa-chevron-down'" @click="resumenAbierto = !resumenAbierto"></i>
+					</div>
+				</div>
+
+				<!-- Vista LISTA -->
+				<div class="resumen-list" v-show="resumenAbierto && vistaResumen === 'lista'">
 					<div class="resumen-row resumen-row-head">
 						<div>Equipo</div>
 						<div class="row-total">Total</div>
 					</div>
-					<div v-for="equipo in resumenEquipos" :key="equipo.id" class="resumen-row">
+					<div v-if="resumenEquipos.length === 0" class="lista-vacia" style="padding:12px 16px;">Sin equipos para este filtro.</div>
+					<div v-for="equipo in resumenEquipos" :key="equipo.equipo_id" class="resumen-row">
 						<div class="row-main">
-							<div class="equipo-nombre">{{ equipo.nombre }}</div>
+							<div class="equipo-nombre">{{ equipo.nombre_equipo }}</div>
 						</div>
-						<div class="row-total">{{ equipo.total }}</div>
+						<div class="row-total">{{ equipo.cantidad }}</div>
+					</div>
+				</div>
+
+				<!-- Vista MOSAICO -->
+				<div
+					v-show="resumenAbierto && (vistaResumen === 'mosaico2' || vistaResumen === 'mosaico3')"
+					class="resumen-mosaico"
+					:class="vistaResumen === 'mosaico3' ? 'resumen-mosaico-3' : 'resumen-mosaico-2'"
+				>
+					<div v-if="resumenEquipos.length === 0" class="lista-vacia" style="padding:12px 16px;">Sin equipos para este filtro.</div>
+					<div v-for="equipo in resumenEquipos" :key="equipo.equipo_id" class="mosaic-card">
+						<div class="mosaic-header">
+							<div class="mosaic-nombre">{{ equipo.nombre_equipo }}</div>
+							<span class="mosaic-total">{{ equipo.cantidad }}</span>
+						</div>
 					</div>
 				</div>
 			</section>
 
-			<section class="desglose-panel">
-				<div class="panel-title">Desglose caracterizado</div>
+			<!-- NIVEL B: Equipos por recinto (tarjetas colapsables) -->
+			<section class="desglose-panel" v-if="!cargando && !error">
+				<div class="panel-title">Equipamiento por recinto</div>
 				<div class="desglose-section">
-					<div class="desglose-title">Equipos asociados a recintos</div>
-					<div v-if="recintosAgrupados.length === 0" class="lista-vacia">Sin equipos para este filtro.</div>
+					<div v-if="recintosAgrupados.length === 0" class="lista-vacia">Sin equipos por recinto para este filtro.</div>
 					<div v-else class="recintos-grid">
-						<div v-for="recinto in recintosAgrupados" :key="recinto.nombre" class="recinto-table" :class="recinto.colorClass">
-							<div class="recinto-title">{{ recinto.nombre }}</div>
-							<div class="tabla-mini">
-								<div class="tabla-mini-head">
-									<span>Equipo</span>
-									<span class="tabla-mini-cantidad">Cantidad</span>
-								</div>
-								<div v-for="item in recinto.items" :key="item.nombre" class="tabla-mini-row">
-									<span>{{ item.nombre }}</span>
+						<div v-for="recinto in recintosAgrupados" :key="recinto.id" class="recinto-card">
+							<!-- Cabecera colapsable -->
+							<div class="recinto-title recinto-title-toggle" @click="toggleRecinto(recinto.id)">
+								<span>{{ recinto.nombre }} <span class="recinto-count">({{ recinto.items.length }})</span></span>
+								<i class="fa-solid" :class="recintoAbierto[recinto.id] ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+							</div>
+							<!-- Cuerpo colapsable -->
+							<div class="recinto-body" v-show="recintoAbierto[recinto.id]">
+								<!-- Items generales del recinto (kit, demanda, tipo2) -->
+								<div class="tabla-mini">
+									<div class="tabla-mini-head">
+										<span>Equipo</span>
+										<span class="tabla-mini-cantidad">Cantidad</span>
+									</div>
+									<template v-if="recinto.items.length > 0">
+								<div v-for="item in recinto.items" :key="item.equipo_id" class="tabla-mini-row">
+									<span>{{ item.nombre_equipo }}</span>
 									<span class="tabla-mini-cantidad">{{ item.cantidad }}</span>
+								</div>
+									</template>
+									<div v-else class="tabla-mini-vacia">Sin equipos propios de recinto.</div>
+								</div>
+								<!-- Sub-desplegable: Estación de Enfermería (solo UCI/UTI, desde estacion_enfermeria[]) -->
+								<div v-if="recinto.estacionEnfermeria.length > 0" class="subrecinto-section">
+									<div class="subrecinto-title" @click.stop="toggleSubNorma(recinto.id)">
+										<i class="fa-solid fa-kit-medical subrecinto-icon"></i>
+										<span>Estación de Enfermería <span class="subrecinto-badge">Norma UPC</span></span>
+										<span class="subrecinto-count">({{ recinto.estacionEnfermeria.length }})</span>
+										<i class="fa-solid subrecinto-chevron" :class="subnormaAbierto[recinto.id] ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+									</div>
+									<div class="subrecinto-body" v-show="subnormaAbierto[recinto.id]">
+										<div class="tabla-mini tabla-mini-upc">
+											<div class="tabla-mini-head tabla-mini-head-upc">
+												<span>Equipo (Est. Enfermería)</span>
+												<span class="tabla-mini-cantidad">Cant.</span>
+											</div>
+											<div v-for="item in recinto.estacionEnfermeria" :key="'ee-' + item.equipo_id" class="tabla-mini-row tabla-mini-row-upc">
+												<span>{{ item.nombre_equipo }}</span>
+												<span class="tabla-mini-cantidad">{{ item.cantidad }}</span>
+											</div>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>
 					</div>
+					<p class="nota-recinto">
+						Nota: la suma de un mismo equipo entre recintos puede no coincidir con el total del resumen.
+						El total (arriba) es la cantidad final real; este desglose muestra donde se ubica cada equipo.
+					</p>
 				</div>
 
-				<div class="desglose-section desglose-section-especifico">
-					<div class="desglose-title">Equipos específicos</div>
-					<div v-if="equiposEspecificosTabla.length === 0" class="lista-vacia">Sin equipos para este filtro.</div>
-					<div v-else class="recinto-table especifico-table">
-						<div class="recinto-title">Equipos específicos por prestación</div>
+				<!-- Demanda compartida: equipos que cruzan mas de un recinto -->
+				<div class="desglose-section desglose-section-especifico" v-if="demandaCompartida.length > 0">
+					<div class="desglose-title">Equipos de demanda compartida (multi-recinto)</div>
+					<div class="recinto-table especifico-table">
+						<div class="recinto-title">No atribuibles a un unico recinto</div>
 						<div class="tabla-mini">
-							<div class="tabla-mini-head">
+							<div class="tabla-mini-head tabla-mini-head-compartida">
 								<span>Equipo</span>
+								<span>Recintos</span>
 								<span class="tabla-mini-cantidad">Cantidad</span>
 							</div>
-							<div v-for="item in equiposEspecificosTabla" :key="item.nombre" class="tabla-mini-row">
-								<span>{{ item.nombre }}</span>
+							<div v-for="item in demandaCompartida" :key="item.equipo_id" class="tabla-mini-row tabla-mini-row-compartida">
+								<span>{{ item.nombre_equipo }}</span>
+								<span class="compartida-recintos">{{ item.recintos_involucrados.map(r => r.nombre_recinto).join(', ') }}</span>
 								<span class="tabla-mini-cantidad">{{ item.cantidad }}</span>
+							</div>
+						</div>
+					</div>
+					<p class="nota-recinto">
+						Estos equipos reciben demanda de prestaciones de varios recintos. Su cantidad es el total real
+						(no se reparte entre recintos para no inventar cifras).
+					</p>
+				</div>
+
+				<!-- Equipamiento requerido por normativa y/o guías + Prestaciones -->
+				<div
+					v-if="equiposNormativa.length > 0 || equiposPrestaciones.length > 0"
+					class="recintos-grid recintos-grid-extra"
+				>
+					<!-- Tarjeta Normativa -->
+					<div v-if="equiposNormativa.length > 0" class="recinto-card">
+						<div class="recinto-title recinto-title-toggle recinto-title-normativa" @click="normativaAbierta = !normativaAbierta">
+							<span>
+								<i class="fa-solid fa-file-medical" style="margin-right:6px;"></i>
+								Equipamiento por normativa y/o guías
+								<span class="recinto-count">({{ equiposNormativa.length }})</span>
+							</span>
+							<i class="fa-solid" :class="normativaAbierta ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+						</div>
+						<div class="recinto-body" v-show="normativaAbierta">
+							<div class="tabla-mini">
+								<div class="tabla-mini-head">
+									<span>Equipo</span>
+									<span class="tabla-mini-cantidad">Total</span>
+								</div>
+								<div v-for="equipo in equiposNormativa" :key="equipo.equipo_id" class="tabla-mini-row">
+									<span>{{ equipo.nombre_equipo }}</span>
+									<span class="tabla-mini-cantidad">{{ equipo.cantidad }}</span>
+								</div>
+							</div>
+						</div>
+					</div>
+
+					<!-- Tarjeta Prestaciones -->
+					<div v-if="equiposPrestaciones.length > 0" class="recinto-card">
+						<div class="recinto-title recinto-title-toggle recinto-title-prestaciones" @click="prestacionesAbierta = !prestacionesAbierta">
+							<span>
+								<i class="fa-solid fa-stethoscope" style="margin-right:6px;"></i>
+								Equipamiento específico de prestaciones
+								<span class="recinto-count">({{ equiposPrestaciones.length }})</span>
+							</span>
+							<i class="fa-solid" :class="prestacionesAbierta ? 'fa-chevron-up' : 'fa-chevron-down'"></i>
+						</div>
+						<div class="recinto-body" v-show="prestacionesAbierta">
+							<div class="tabla-mini">
+								<div class="tabla-mini-head">
+									<span>Equipo</span>
+									<span class="tabla-mini-cantidad">Total</span>
+								</div>
+								<div v-for="equipo in equiposPrestaciones" :key="equipo.equipo_id" class="tabla-mini-row">
+									<span>{{ equipo.nombre_equipo }}</span>
+									<span class="tabla-mini-cantidad">{{ equipo.cantidad }}</span>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -203,7 +353,7 @@
 				<img src="https://sigem-uv.cl/_general/logos/LOGO_SIGEM-UV_HORIZONTAL-BLANCO.png" alt="SIGEM-UV" height="48" />
 			</div>
 			<div class="sigem-bottomline-center">
-				<div>Gral. Cruz 222, Valparaíso ::: +56 32 2603662</div>
+				<div>Gral. Cruz 222, Valparaiso ::: +56 32 2603662</div>
 				<div>
 					<a href="mailto:contacto@sigem-uv.cl" style="color:#fff">contacto@sigem-uv.cl</a> :::
 					<a href="https://biomedica.uv.cl" style="color:#fff" target="_blank">www.biomedica.uv.cl</a>
@@ -232,80 +382,201 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const nombreProyecto = ref('Proyecto seleccionado')
+const proyectoIdActivo = ref(null)
 const pabellones = ref(0)
 const boxes = ref(0)
 const cargando = ref(true)
 const error = ref(null)
 
+const cajasFiltro = ref(false)
+const resumenAbierto = ref(true)
+const vistaResumen = ref('lista') // 'lista' | 'mosaico2' | 'mosaico3'
+
+// Datos crudos del back-end (contrato calcular_demanda.php)
+const equipos = ref([])              // datos.equipamiento.equipos (Nivel A)
+const porRecinto = ref({})           // datos.equipamiento.por_recinto (Nivel B)
+const demandaCompartidaRaw = ref([]) // datos.equipamiento.demanda_compartida
+const pabellonesPorRecintoRaw = ref({}) // datos.pabellones.pabellones_por_recinto
+const boxesPorRecintoRaw = ref({})   // datos.boxes.por_recinto
+
 const filtros = ref({
 	texto: '',
-	tipo: '',
-	origen: '',
 	recinto: '',
-	prestacion: '',
 })
 
-const resultados = ref([])
+// Estado colapsable de cada tarjeta de recinto y sub-panel norma_upc
+const recintoAbierto = ref({})   // { [recintoId]: boolean }
+const subnormaAbierto = ref({})  // { [recintoId]: boolean }
+const normativaAbierta = ref(false)
+const prestacionesAbierta = ref(false)
 
-const opcionesTipo = computed(() => [...new Set(resultados.value.map((e) => e.tipo))])
-const opcionesRecinto = computed(() => [...new Set(resultados.value.flatMap((e) => e.recintos))])
-const opcionesPrestacion = computed(() => [...new Set(resultados.value.flatMap((e) => e.prestaciones))])
+// Etiqueta legible para cada origen del calculo.
+function etiquetaOrigen(origen) {
+	const mapa = {
+		kit: 'Kit',
+		demanda: 'Demanda',
+		norma_upc: 'Norma UPC',
+		tipo2_relacion: 'Tipo 2',
+	}
+	return mapa[origen] || origen
+}
 
-const resultadosFiltrados = computed(() => {
-	const texto = filtros.value.texto.trim().toLowerCase()
-	return resultados.value.filter((equipo) => {
-		if (texto && !equipo.nombre.toLowerCase().includes(texto)) return false
-		if (filtros.value.tipo && equipo.tipo !== filtros.value.tipo) return false
-		if (filtros.value.recinto && !equipo.recintos.includes(filtros.value.recinto)) return false
-		if (filtros.value.prestacion && !equipo.prestaciones.includes(filtros.value.prestacion)) return false
-		if (filtros.value.origen === 'recinto' && equipo.recinto === 0) return false
-		if (filtros.value.origen === 'especifico' && equipo.especifico === 0) return false
+// Normaliza texto quitando tildes/diacriticos para filtrado insensible a acentos.
+function normalizar(str) {
+	return (str || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+}
+
+// Total de unidades de equipo (suma de todas las cantidades del Nivel A).
+const totalUnidadesEquipos = computed(() =>
+	equipos.value.reduce((acc, e) => acc + (e.cantidad || 0), 0)
+)
+
+// Conteo de pabellones/boxes por recinto para los chips.
+const pabellonesPorRecinto = computed(() =>
+	Object.entries(pabellonesPorRecintoRaw.value).map(([id, info]) => ({
+		id,
+		nombre: nombreRecinto(id),
+		cantidad: info.pabellones,
+	}))
+)
+const boxesPorRecinto = computed(() =>
+	Object.entries(boxesPorRecintoRaw.value).map(([id, info]) => ({
+		id,
+		nombre: nombreRecinto(id),
+		cantidad: info.boxes,
+	}))
+)
+
+// Nombre legible de recinto por id (fallback si el back-end no lo trae).
+function nombreRecinto(id) {
+	const mapa = { 1: 'Cubiculo UTI', 2: 'Cubiculo UCI', 3: 'Pabellon menor', 4: 'Pabellon mayor' }
+	return mapa[id] || ('Recinto ' + id)
+}
+
+// Opciones de recinto para el filtro (a partir de por_recinto).
+const opcionesRecinto = computed(() =>
+	Object.values(porRecinto.value)
+		.filter((r) => r.equipos && r.equipos.length > 0)
+		.map((r) => r.nombre_recinto)
+)
+
+// NIVEL A — Resumen total, con filtros aplicados.
+const resumenEquipos = computed(() => {
+	const texto = normalizar(filtros.value.texto.trim())
+	return equipos.value
+		.filter((e) => (e.cantidad || 0) > 0)
+		.filter((e) => !texto || normalizar(e.nombre_equipo).includes(texto))
+})
+
+// NIVEL B — Equipos por recinto, con filtros aplicados.
+// Usa el contrato real del back-end: info.equipos[] (generales) + info.estacion_enfermeria[] (solo UTI/UCI).
+// Cross-referencia el mapa de orígenes del Nivel A para excluir de las tarjetas
+// los equipos que provienen EXCLUSIVAMENTE de normas de razón (tipo2_relacion),
+// ya que estos no son propios del recinto sino de una regla transversal.
+// Solo se muestran en la tarjeta equipos con origen kit o demanda.
+const recintosAgrupados = computed(() => {
+	const texto = normalizar(filtros.value.texto.trim())
+	const coincide = (item) => !texto || normalizar(item.nombre_equipo).includes(texto)
+
+	// Mapa equipo_id → origenes desde el Nivel A (que sí tiene origenes por equipo)
+	const origenMap = Object.fromEntries(
+		equipos.value.map((e) => [e.equipo_id, e.origenes || {}])
+	)
+	// Un equipo es "propio del recinto" si tiene origen 'kit'.
+	// Se excluyen los que vienen por 'demanda' (prestación) o 'tipo2_relacion' (regla).
+	// Los de 'norma_upc' ya van por otra vía (estacionEnfermeria).
+	const esPropioDel = (item) => {
+		const orig = origenMap[item.equipo_id] || {}
+		return (orig.kit ?? 0) > 0
+	}
+
+	return Object.entries(porRecinto.value)
+		.map(([id, info]) => ({
+			id,
+			nombre: info.nombre_recinto || nombreRecinto(id),
+			items: (info.equipos || []).filter((item) => coincide(item) && esPropioDel(item)),
+			// estacion_enfermeria: solo viene con elementos en recintos 1 (UTI) y 2 (UCI);
+			// en pabellones (3/4) el back-end entrega [] — no se renderiza el sub-panel.
+			estacionEnfermeria: (info.estacion_enfermeria || []).filter(coincide),
+		}))
+		// Mostrar el recinto si tiene equipos propios O de enfermeria.
+		.filter((r) => r.items.length > 0 || r.estacionEnfermeria.length > 0)
+		.filter((r) => !filtros.value.recinto || r.nombre === filtros.value.recinto)
+})
+
+// Demanda compartida (multi-recinto), con filtro de texto.
+const demandaCompartida = computed(() => {
+	const texto = normalizar(filtros.value.texto.trim())
+	return demandaCompartidaRaw.value.filter((item) => {
+		if (texto && !normalizar(item.nombre_equipo).includes(texto)) return false
 		return true
 	})
 })
 
-const resumenEquipos = computed(() => resultadosFiltrados.value.map((equipo) => ({
-	...equipo,
-	porcentajeRecinto: Math.round((equipo.recinto / (equipo.total || 1)) * 100),
-	porcentajeEspecifico: Math.round((equipo.especifico / (equipo.total || 1)) * 100),
-})))
-
-const equiposRecinto = computed(() => resultadosFiltrados.value.filter((e) => e.recinto > 0))
-const equiposEspecificos = computed(() => resultadosFiltrados.value.filter((e) => e.especifico > 0))
-
-const recintosAgrupados = computed(() => {
-	const mapa = new Map()
-	const colores = ['pastel-amber', 'pastel-rose', 'pastel-peach', 'pastel-sand']
-	let colorIndex = 0
-	equiposRecinto.value.forEach((equipo) => {
-		const recintos = Array.isArray(equipo.recintos) && equipo.recintos.length > 0 ? equipo.recintos : ['Recinto']
-		const cantidadPorRecinto = Math.max(1, Math.round(equipo.recinto / recintos.length))
-		recintos.forEach((recinto) => {
-			if (!mapa.has(recinto)) {
-				mapa.set(recinto, { nombre: recinto, items: [], colorClass: colores[colorIndex % colores.length] })
-				colorIndex++
-			}
-			mapa.get(recinto).items.push({ nombre: equipo.nombre, cantidad: cantidadPorRecinto })
+// Equipamiento requerido por normativa y/o guías (origen norma_upc o tipo2_relacion).
+const equiposNormativa = computed(() => {
+	const texto = normalizar(filtros.value.texto.trim())
+	return equipos.value
+		.filter((e) => (e.cantidad || 0) > 0)
+		.filter((e) => {
+			const orig = e.origenes || {}
+			return ('norma_upc' in orig) || ('tipo2_relacion' in orig)
 		})
-	})
-	return Array.from(mapa.values())
+		.filter((e) => !texto || normalizar(e.nombre_equipo).includes(texto))
 })
 
-const equiposEspecificosTabla = computed(() => equiposEspecificos.value.map((e) => ({ nombre: e.nombre, cantidad: e.especifico })))
-const totalEquipos = computed(() => resultadosFiltrados.value.reduce((acc, e) => acc + e.total, 0))
+// Equipamiento específico de prestaciones seleccionadas (origen demanda).
+const equiposPrestaciones = computed(() => {
+	const texto = normalizar(filtros.value.texto.trim())
+	return equipos.value
+		.filter((e) => (e.cantidad || 0) > 0)
+		.filter((e) => {
+			const orig = e.origenes || {}
+			return ('demanda' in orig)
+		})
+		.filter((e) => !texto || normalizar(e.nombre_equipo).includes(texto))
+})
+
+// Toggle apertura/cierre de tarjeta de recinto
+function toggleRecinto(id) {
+	recintoAbierto.value = { ...recintoAbierto.value, [id]: !recintoAbierto.value[id] }
+}
+
+// Toggle sub-panel norma_upc dentro de un recinto
+function toggleSubNorma(id) {
+	subnormaAbierto.value = { ...subnormaAbierto.value, [id]: !subnormaAbierto.value[id] }
+}
 
 onMounted(() => {
 	const raw = localStorage.getItem('ephdem_resultado_calculo')
 	if (!raw) {
-		error.value = 'No hay resultados disponibles. Vuelve a parámetros y calcula.'
+		error.value = 'No hay resultados disponibles. Vuelve a parametros y calcula.'
 		cargando.value = false
 		return
 	}
 	try {
-		const datos = JSON.parse(raw)
+		const parsed = JSON.parse(raw)
+		// Soporta tanto el objeto { ok, datos } completo como solo datos.
+		const datos = parsed.datos ? parsed.datos : parsed
+
+		proyectoIdActivo.value = datos.proyecto_id ?? null
+
 		pabellones.value = datos.pabellones?.total ?? 0
-		boxes.value      = datos.boxes?.total ?? 0
-		cargando.value   = false
+		boxes.value = datos.boxes?.total ?? 0
+
+		equipos.value = datos.equipamiento?.equipos ?? []
+		porRecinto.value = datos.equipamiento?.por_recinto ?? {}
+		demandaCompartidaRaw.value = datos.equipamiento?.demanda_compartida ?? []
+		pabellonesPorRecintoRaw.value = datos.pabellones?.pabellones_por_recinto ?? {}
+		boxesPorRecintoRaw.value = datos.boxes?.por_recinto ?? {}
+
+		if (datos.nombre_proyecto) {
+			nombreProyecto.value = datos.nombre_proyecto
+		} else {
+			nombreProyecto.value = localStorage.getItem('ephdem_nombre_proyecto_activo') || 'Desconocido'
+		}
+
+		cargando.value = false
 	} catch (e) {
 		error.value = 'Error al leer los resultados.'
 		cargando.value = false
@@ -313,6 +584,9 @@ onMounted(() => {
 })
 
 function volverAtras() {
+	// Limpia los resultados previos del caché para evitar datos residuales al re-calcular
+	localStorage.removeItem('ephdem_resultado_calculo')
+	
 	router.back()
 	setTimeout(() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' }), 0)
 }
@@ -323,11 +597,23 @@ function cerrarSesion() {
 }
 
 function exportarExcel() {
-	alert('Exportar a Excel (pendiente de integrar con el back-end).')
+	if (!proyectoIdActivo.value) {
+		alert('No se pudo identificar el proyecto activo.')
+		return
+	}
+	const nombre = encodeURIComponent(nombreProyecto.value || 'Proyecto')
+	const base = 'https://sigem-uv.cl/__v2/modulo_eph/ajax/generar_xls_cerrada.php'
+	window.open(`${base}?proyecto_id=${proyectoIdActivo.value}&nombre=${nombre}`, '_blank')
 }
 
 function exportarPdf() {
-	alert('Exportar a PDF (pendiente de integrar con el back-end).')
+	if (!proyectoIdActivo.value) {
+		alert('No se pudo identificar el proyecto activo.')
+		return
+	}
+	const nombre = encodeURIComponent(nombreProyecto.value || 'Proyecto')
+	const base = 'https://sigem-uv.cl/__v2/modulo_eph/ajax/generar_pdf_cerrada.php'
+	window.open(`${base}?proyecto_id=${proyectoIdActivo.value}&nombre=${nombre}`, '_blank')
 }
 </script>
 
@@ -450,11 +736,6 @@ function exportarPdf() {
 	align-items: flex-end;
 	justify-content: space-between;
 	gap: 16px;
-}
-.header-left {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
 }
 .header-actions {
 	display: flex;
@@ -588,6 +869,38 @@ function exportarPdf() {
 	color: rgba(255, 255, 255, 0.7);
 }
 
+/* Chips de recintos requeridos */
+.recintos-conteo-panel {
+	background: $color-blanco;
+	border-radius: 16px;
+	padding: 18px 20px;
+	border: 1px solid $color-borde;
+	box-shadow: 0 10px 22px $color-sombra-suave;
+}
+.conteo-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+.conteo-chip {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background: #eef5f9;
+	border: 1px solid $color-borde;
+	border-radius: 999px;
+	padding: 8px 16px;
+}
+.chip-nombre {
+	font-weight: 600;
+	color: $color-primario;
+}
+.chip-valor {
+	font-weight: 700;
+	font-size: 1.2rem;
+	color: $color-primario;
+}
+
 .filtros-panel {
 	background: $color-blanco;
 	border-radius: 16px;
@@ -628,6 +941,107 @@ function exportarPdf() {
 	color: $color-primario;
 	margin-bottom: 16px;
 }
+.panel-title-toggle {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	background: #eef5f9;
+	margin: -20px -20px 16px -20px;
+	padding: 10px 16px;
+	border-radius: 14px 14px 0 0;
+	cursor: pointer;
+	user-select: none;
+	transition: background 0.15s;
+	&:hover { background: #ddeaf4; }
+}
+
+/* Grupo de botones de selección de vista */
+.vista-toggle-group {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+.vista-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 30px;
+	height: 30px;
+	background: transparent;
+	border: 1.5px solid transparent;
+	border-radius: 8px;
+	color: $color-primario;
+	opacity: 0.45;
+	cursor: pointer;
+	transition: opacity 0.15s, background 0.15s, border-color 0.15s;
+	padding: 0;
+	&:hover {
+		opacity: 0.9;
+		background: rgba(0, 60, 88, 0.08);
+		border-color: rgba(0, 60, 88, 0.18);
+	}
+	&.vista-btn-active {
+		opacity: 1;
+		background: $color-primario;
+		border-color: $color-primario;
+		color: #fff;
+	}
+}
+.vista-chevron {
+	font-size: 0.85rem;
+	opacity: 0.55;
+	margin-left: 6px;
+	cursor: pointer;
+	transition: opacity 0.15s;
+	&:hover { opacity: 1; }
+}
+
+/* Mosaico */
+.resumen-mosaico {
+	display: grid;
+	gap: 8px;
+	&.resumen-mosaico-2 { grid-template-columns: repeat(2, 1fr); }
+	&.resumen-mosaico-3 { grid-template-columns: repeat(3, 1fr); }
+}
+.mosaic-card {
+	background: #f4f8fb;
+	border: 1px solid $color-borde;
+	border-radius: 8px;
+	padding: 8px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	transition: box-shadow 0.18s, background 0.15s;
+	&:hover {
+		background: #e8f2fa;
+		box-shadow: 0 3px 10px rgba(0,60,88,0.10);
+	}
+}
+.mosaic-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+.mosaic-nombre {
+	font-size: 0.8rem;
+	font-weight: 600;
+	color: $color-texto-principal;
+	line-height: 1.3;
+	flex: 1;
+}
+.mosaic-total {
+	font-size: 1.05rem;
+	font-weight: 800;
+	color: $color-primario;
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+.mosaic-origenes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 3px;
+}
 .resumen-list {
 	display: flex;
 	flex-direction: column;
@@ -645,6 +1059,12 @@ function exportarPdf() {
 	align-items: center;
 	border-bottom: 1px solid $color-borde;
 }
+.resumen-list .resumen-row:not(.resumen-row-head):nth-child(even) {
+	background: #f0f6fb;
+}
+.resumen-list .resumen-row:not(.resumen-row-head):nth-child(odd) {
+	background: #f8fbfd;
+}
 .resumen-row:last-child {
 	border-bottom: none;
 }
@@ -658,6 +1078,26 @@ function exportarPdf() {
 	flex-direction: column;
 	gap: 4px;
 }
+.row-origenes {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	justify-content: flex-end;
+}
+.origen-badge {
+	font-size: 0.72rem;
+	font-weight: 700;
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: #eef5f9;
+	color: $color-primario;
+	border: 1px solid $color-borde;
+	white-space: nowrap;
+}
+.origen-kit { background: #eaf3ff; }
+.origen-demanda { background: #fff2e0; }
+.origen-norma_upc { background: #e9f7ef; }
+.origen-tipo2_relacion { background: #f3e9ff; }
 .row-total {
 	font-size: 1.4rem;
 	font-weight: 700;
@@ -680,9 +1120,8 @@ function exportarPdf() {
 	margin-top: 8px;
 }
 .recintos-grid {
-	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 18px;
+	columns: 2;
+	column-gap: 18px;
 }
 .recinto-table {
 	border-radius: 12px;
@@ -692,6 +1131,18 @@ function exportarPdf() {
 	overflow: hidden;
 	background: $color-blanco;
 }
+// Tarjeta colapsable de recinto
+.recinto-card {
+	border-radius: 12px;
+	border: 1px solid $color-borde;
+	box-shadow: 0 2px 8px $color-sombra-suave;
+	overflow: hidden;
+	background: $color-blanco;
+	transition: box-shadow 0.2s;
+	break-inside: avoid;       /* no partir tarjeta entre columnas */
+	margin-bottom: 18px;       /* separación entre tarjetas de la misma columna */
+	&:hover { box-shadow: 0 4px 16px $color-sombra-suave; }
+}
 .recinto-title {
 	font-weight: 700;
 	color: $color-primario;
@@ -699,6 +1150,103 @@ function exportarPdf() {
 	margin: 0;
 	padding: 10px 14px;
 	border-radius: 0;
+}
+.recinto-title-toggle {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	cursor: pointer;
+	user-select: none;
+	transition: background 0.15s;
+	&:hover { background: #ddeaf4; }
+	i { font-size: 0.85rem; opacity: 0.7; transition: transform 0.2s; }
+}
+.recinto-body {
+	border-top: 1px solid $color-borde;
+}
+.recinto-count {
+	font-weight: 500;
+	color: $color-texto-secundario;
+}
+// Sub-panel Estación de Enfermería — diseño azul pizarra médico
+.subrecinto-section {
+	border-top: none;
+	margin: 0 10px 10px 10px;
+	border-radius: 10px;
+	overflow: hidden;
+	border: 1px solid #c5d7f0;
+	box-shadow: 0 2px 10px rgba(30, 80, 160, 0.07);
+}
+.subrecinto-title {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 9px 12px 9px 14px;
+	cursor: pointer;
+	user-select: none;
+	font-size: 0.86rem;
+	font-weight: 700;
+	color: #1a4d8f;
+	background: linear-gradient(90deg, #e8f0fb 0%, #f0f5ff 100%);
+	border-left: 4px solid #3a7bd5;
+	transition: background 0.15s;
+	&:hover { background: linear-gradient(90deg, #d8e6f8 0%, #e8f0fd 100%); }
+}
+.subrecinto-icon {
+	font-size: 0.9rem;
+	color: #3a7bd5;
+	flex-shrink: 0;
+}
+.subrecinto-badge {
+	display: inline-flex;
+	align-items: center;
+	font-size: 0.63rem;
+	font-weight: 800;
+	padding: 1px 6px;
+	border-radius: 4px;
+	background: #3a7bd5;
+	color: #fff;
+	margin-left: 4px;
+	vertical-align: middle;
+	text-transform: uppercase;
+	letter-spacing: 0.6px;
+}
+.subrecinto-count {
+	font-size: 0.78rem;
+	font-weight: 500;
+	color: #5580b0;
+	margin-left: 2px;
+}
+.subrecinto-chevron {
+	margin-left: auto;
+	font-size: 0.78rem;
+	color: #3a7bd5;
+	opacity: 0.8;
+}
+.subrecinto-body {
+	border-top: 1px solid #d0e2f5;
+	background: #f5f8fe;
+}
+.tabla-mini-upc {
+	background: #f5f8fe;
+}
+.tabla-mini-head-upc {
+	background: #dce9f8;
+	color: #1a4d8f;
+	border-left: 4px solid #3a7bd5;
+}
+.tabla-mini-row-upc {
+	background: #f5f8fe;
+	color: #1e3a6b;
+	border-left: 4px solid #b8d0ef;
+	&:hover { background: #eaf1fc; border-left-color: #3a7bd5; }
+	&:last-child { border-bottom: none; }
+}
+.tabla-mini-vacia {
+	padding: 10px 12px;
+	font-size: 0.83rem;
+	color: $color-texto-secundario;
+	font-style: italic;
 }
 .tabla-mini {
 	display: flex;
@@ -717,6 +1265,9 @@ function exportarPdf() {
 	text-transform: uppercase;
 	letter-spacing: 0.5px;
 }
+.tabla-mini-head-compartida {
+	grid-template-columns: 1fr 1fr 80px;
+}
 .tabla-mini-row {
 	display: grid;
 	grid-template-columns: 1fr 80px;
@@ -726,32 +1277,54 @@ function exportarPdf() {
 	font-weight: 600;
 	color: $color-texto-principal;
 }
+.tabla-mini-row-compartida {
+	grid-template-columns: 1fr 1fr 80px;
+}
+.compartida-recintos {
+	font-size: 0.82rem;
+	font-weight: 500;
+	color: $color-texto-secundario;
+}
 .tabla-mini-row:last-child {
 	border-bottom: none;
 }
 .tabla-mini-cantidad {
 	text-align: right;
 }
-.pastel-amber {
-	background: $color-blanco;
-}
-.pastel-rose {
-	background: $color-blanco;
-}
-.pastel-peach {
-	background: $color-blanco;
-}
-.pastel-sand {
-	background: $color-blanco;
+.nota-recinto {
+	margin: 12px 0 0 0;
+	font-size: 0.8rem;
+	color: $color-texto-secundario;
+	font-style: italic;
+	line-height: 1.4;
 }
 .especifico-table {
 	background: $color-blanco;
-	max-width: 50%;
+	max-width: 100%;
 }
 .lista-vacia {
 	color: $color-texto-secundario;
 	font-weight: 500;
 	padding: 12px 0;
+}
+
+/* Cabeceras coloreadas para normativa y prestaciones */
+.recinto-title-normativa {
+	background: #fff7ed;
+	color: #92400e;
+	border-left: 4px solid #f59e0b;
+	i { color: #d97706; }
+	&:hover { background: #fef3c7; }
+}
+.recinto-title-prestaciones {
+	background: #f5f3ff;
+	color: #4c1d95;
+	border-left: 4px solid #8b5cf6;
+	i { color: #7c3aed; }
+	&:hover { background: #ede9fe; }
+}
+.recintos-grid-extra {
+	margin-top: 18px;
 }
 
 .sigem-bottomline {
@@ -805,6 +1378,9 @@ function exportarPdf() {
 	.resumen-row {
 		grid-template-columns: 1fr;
 		text-align: left;
+	}
+	.row-origenes {
+		justify-content: flex-start;
 	}
 	.row-total {
 		text-align: left;

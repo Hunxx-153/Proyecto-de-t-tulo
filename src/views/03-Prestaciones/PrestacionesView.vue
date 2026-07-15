@@ -95,6 +95,7 @@
 						<i class="fa-solid fa-circle-info"></i>
 					</span>
 					<span class="instruccion-texto">
+					Se están agregando prestaciones para el proyecto: <strong>{{ nombreProyectoActivo }}</strong>.<br>
 					Selecciona las prestaciones que se asociarán al proyecto: usa
 					<span class="instruccion-badge instruccion-badge--agregar"><i class="fa-solid fa-plus"></i></span>
 					para agregar y
@@ -243,6 +244,7 @@ const mostrarConsideraciones = ref(false)
 const consideracionesRef = ref(null)
 
 const seleccionadas = ref([])
+const nombreProyectoActivo = ref('')
 
 function normalizarTexto(valor) {
 	return String(valor ?? '')
@@ -307,6 +309,7 @@ const prestacionesSeleccionadas = computed(() => {
 })
 
 onMounted(async () => {
+	nombreProyectoActivo.value = localStorage.getItem('ephdem_nombre_proyecto_activo') || 'Desconocido'
 	await cargarPrestaciones()
 	cargarSeleccionadas()
 })

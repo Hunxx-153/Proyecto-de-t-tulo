@@ -30,7 +30,8 @@ if (!$conn) {
 mysqli_set_charset($conn, 'utf8mb4');
 
 // ===== CONSULTA =====
-$stmt = mysqli_prepare($conn, 
+$stmt = mysqli_prepare(
+    $conn,
     "SELECT 
         id_proyecto,
         Nombre_proyecto AS nombre_proyecto,

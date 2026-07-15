@@ -132,6 +132,7 @@
 						<i class="fa-solid fa-circle-info"></i>
 					</span>
 					<span class="instruccion-texto">
+						Se están agregando parámetros para el proyecto: <strong>{{ nombreProyectoActivo }}</strong>.<br>
 						Completa las variables para cada prestación seleccionada. En el símbolo<span class="info-icon info-icon--demo" aria-hidden="true">i</span>
 						podrás ver en específico las características de cada parámetro, para el caso de la UPC, puedes usar la calculadora en base a coeficiente técnico para obtener los días cama, si ya conoces ese valor, ingrésalo en la demanda de la prestación <strong>"Día cama"</strong> correspondiente de UPC.
 					</span>
@@ -265,6 +266,7 @@ const filas = ref([])
 const tooltipPosicion = ref({ top: '0px', left: '0px', visible: false, texto: '', abrirIzquierda: false })
 const erroresCeldas = ref(new Set())
 const errorValidacion = ref('')
+const nombreProyectoActivo = ref('')
 
 const mostrarCalculadora = ref(false)
 const calculadoraRef = ref(null)
@@ -455,6 +457,7 @@ function limpiarCalculadora() {
 }
 
 onMounted(() => {
+	nombreProyectoActivo.value = localStorage.getItem('ephdem_nombre_proyecto_activo') || 'Desconocido'
 	cargarDatos()
 	document.addEventListener('pointerdown', cerrarCalculadoraSiCorresponde)
 })

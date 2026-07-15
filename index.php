@@ -71,10 +71,11 @@ $isDev = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1'], tru
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="<?= BASE_URL ?>/favicon.ico">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    crossorigin="anonymous">
-  <title>EPH-DEM</title>
+    <link rel="shortcut icon" href="<?= BASE_URL ?>/favicon-sigem.png" type="image/png">
+    <link rel="icon" href="<?= BASE_URL ?>/favicon-sigem.png" type="image/png">
+    <link rel="apple-touch-icon" href="<?= BASE_URL ?>/favicon-sigem.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous">
+    <title>EPHDEM | SIGEM-UV</title>
   <?php if ($isDev): ?>
     <!-- Desarrollo: Vite dev server con HMR -->
     <script type="module" src="http://localhost:5173/@vite/client"></script>

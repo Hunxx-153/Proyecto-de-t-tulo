@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <!-- TOP BAR 1: Logos institucionales -->
   <div class="sigem-topbar1">
     <div class="sigem-topbar1-center">

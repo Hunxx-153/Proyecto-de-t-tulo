@@ -32,14 +32,14 @@ if (!$conn) {
 mysqli_set_charset($conn, 'utf8mb4');
 
 // ===== VALIDACIÓN DE DISPONIBILIDAD =====
-$stmt = mysqli_prepare($conn, "SELECT id_proyecto FROM EPHAC_Proyectos WHERE Nombre_proyecto = ?");
+$stmt = mysqli_prepare($conn, "SELECT id_proyecto FROM EPHAC_Proyectos WHERE Nombre_proyecto = ? AND usuario_id = ?");
 if ($stmt) {
-    mysqli_stmt_bind_param($stmt, "s", $nombre_proyecto);
+    mysqli_stmt_bind_param($stmt, "si", $nombre_proyecto, $usuario_id);
     mysqli_stmt_execute($stmt);
     mysqli_stmt_store_result($stmt);
     if (mysqli_stmt_num_rows($stmt) > 0) {
         http_response_code(409); // Conflict
-        echo json_encode(['ok' => false, 'error' => 'El nombre del proyecto ya está en uso. Por favor, elige otro.']);
+        echo json_encode(['ok' => false, 'error' => 'Ya tienes un proyecto con este nombre. Por favor, elige otro.']);
         mysqli_stmt_close($stmt);
         mysqli_close($conn);
         exit;

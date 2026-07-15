@@ -1,4 +1,4 @@
-﻿<template>
+<template>
 	<div class="login-layout">
 		<!-- TOP BAR 1: Logos institucionales -->
 		<div class="sigem-topbar1">
@@ -129,6 +129,24 @@
 										<span v-if="cargando"><i class="fa-solid fa-spinner fa-spin"></i> Verificando...</span>
 										<span v-else>Ingresar <i class="fa-solid fa-arrow-right"></i></span>
 									</button>
+								</div>
+								<!-- Links secundarios -->
+								<div class="login-links">
+									<a
+										href="https://www.sigem-uv.cl/__v2/admin_sigem/sigem_recuperar.php"
+										target="_blank"
+										class="login-link"
+									>
+										<i class="fa-solid fa-key"></i> Olvidé mi contraseña
+									</a>
+									<span class="login-link-sep">·</span>
+									<a
+										href="https://www.sigem-uv.cl/__v2/admin_sigem/creacion_cuenta.php"
+										target="_blank"
+										class="login-link"
+									>
+										<i class="fa-solid fa-user-plus"></i> Crear cuenta
+									</a>
 								</div>
 							</form>
 						</div>
@@ -512,6 +530,35 @@ async function iniciarSesion() {
 
 .login-acciones {
 	margin-top: 8px;
+}
+
+.login-links {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	margin-top: 20px;
+	flex-wrap: wrap;
+}
+.login-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-size: 0.85rem;
+	font-weight: 500;
+	color: $color-texto-secundario;
+	text-decoration: none;
+	transition: color 0.18s;
+	i { font-size: 0.8rem; opacity: 0.75; }
+	&:hover {
+		color: $color-primario;
+		i { opacity: 1; }
+	}
+}
+.login-link-sep {
+	color: $color-borde;
+	font-size: 1.1rem;
+	line-height: 1;
 }
 
 .btn-ingresar {
