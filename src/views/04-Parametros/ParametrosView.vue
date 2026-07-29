@@ -1,4 +1,5 @@
 <template>
+	<div class="page-layout">
 	<!-- TOP BAR 1: Logos institucionales -->
 	<div class="sigem-topbar1">
 		<div class="sigem-topbar1-center">
@@ -242,6 +243,7 @@
 			</div>
 		</div>
 	</footer>
+	</div>
 </template>
 
 <script setup>
@@ -402,12 +404,20 @@ async function guardarYCalcular() {
 	const idProyectoActual = route.params.proyectoId || localStorage.getItem('ephdem_proyecto_activo')
 	if (!idProyectoActual) {
 		alert('No hay un proyecto activo. Vuelve a crear o seleccionar un proyecto.')
-		router.push('/crear-proyecto') // ajustar a la ruta real de creación
+		router.push('/crear-proyecto')
 		return
 	}
 
 	// Guardar parámetros en localStorage como respaldo (igual que antes)
 	localStorage.setItem(PARAMETROS_STORAGE_KEY, JSON.stringify(filas.value))
+
+	// Guardar los valores de tiempo_procedimiento modificados por el usuario,
+	// asociados a este proyecto (el backend no los persiste, los guardamos en localStorage)
+	const tpOverrides = {}
+	for (const fila of filas.value) {
+		tpOverrides[fila.id] = fila.tiempoProcedimiento
+	}
+	localStorage.setItem(`ephdem_tp_overrides_${idProyectoActual}`, JSON.stringify(tpOverrides))
 
 	// Construir el payload con el contrato exacto del endpoint
 	const payload = {
@@ -474,27 +484,51 @@ function limpiarCalculadora() {
 
 async function cargarDesdeServidor(proyectoId) {
 	try {
-		const url = `${import.meta.env.VITE_API_BASE}/get_prestaciones_demanda.php?proyecto_id=${proyectoId}`
-		const resp = await fetch(url)
-		const json = await resp.json()
+		// Cargar en paralelo: datos del proyecto + lista base de prestaciones (para obtener tiempo_procedimiento)
+		const [respDemanda, respPrestaciones] = await Promise.all([
+			fetch(`${import.meta.env.VITE_API_BASE}/get_prestaciones_demanda.php?proyecto_id=${proyectoId}`),
+			fetch(`${import.meta.env.VITE_API_BASE}/get_prestaciones.php`),
+		])
+		const json = await respDemanda.json()
+		const jsonPrestaciones = await respPrestaciones.json()
 
-		if (!resp.ok || !json.ok) {
+		if (!respDemanda.ok || !json.ok) {
 			alert(json.error || 'Error al cargar datos del proyecto.')
 			router.push('/proyectos')
 			return
 		}
 
+		// Construir mapa de tiempo_procedimiento base (desde la tabla de prestaciones)
+		const tiempoMap = new Map()
+		if (jsonPrestaciones?.ok && Array.isArray(jsonPrestaciones?.datos)) {
+			for (const p of jsonPrestaciones.datos) {
+				if (p.id_prestacion != null && p.tiempo_procedimiento != null) {
+					tiempoMap.set(p.id_prestacion, p.tiempo_procedimiento)
+				}
+			}
+		}
+
+		// Recuperar los overrides que el usuario guardó previamente para este proyecto
+		let tpOverrides = {}
+		try {
+			const rawOverrides = localStorage.getItem(`ephdem_tp_overrides_${proyectoId}`)
+			if (rawOverrides) tpOverrides = JSON.parse(rawOverrides)
+		} catch (_) { /* si falla el parse, ignorar */ }
+
 		filas.value = json.datos.map((item) => {
 			const vals = item.valores
 			const defs = item.defaults || {}
+			// Prioridad: override guardado por el usuario → valor base de la tabla → fallback 60
+			const tiempoBase = tiempoMap.get(item.id_prestacion) ?? MINUTOS_POR_HORA
+			const tiempoProcedimiento = tpOverrides[item.id_prestacion] ?? tiempoBase
 
 			return {
 				id: item.id_prestacion,
 				codigo_fonasa: item.codigo_fonasa || '',
 				nombre_prestacion: item.nombre_prestacion,
-				demanda: vals ? vals.demanda_anual : 0,
+				demanda: vals?.demanda_anual ?? 0,
 				diasAnuales: vals ? vals.dias_laborales : (defs.dias_laborales ?? 365),
-				tiempoProcedimiento: vals?.tiempo_procedimiento ?? defs?.tiempo_procedimiento ?? item.tiempo_procedimiento ?? MINUTOS_POR_HORA,
+				tiempoProcedimiento,
 				disponibilidad: vals ? (vals.disponibilidad * 100) : (defs.disponibilidad ? defs.disponibilidad * 100 : 100),
 				jornadaLaboral: vals ? vals.jornada_efectiva : (defs.jornada_efectiva ?? 24)
 			}
@@ -630,8 +664,15 @@ function cerrarSesion() {
 	margin: 0;
 }
 
+.page-layout {
+	min-height: 100vh;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
 .parametros-page {
 	background: $color-fondo;
+	flex: 1;
 }
 .parametros-content {
 	max-width: 1480px;

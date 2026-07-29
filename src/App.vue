@@ -11,8 +11,19 @@
   padding: 0;
 }
 
+html,
 body {
+  min-height: 100vh;
   font-family: 'Segoe UI', Arial, sans-serif;
   background: #f0f4f7;
+}
+
+/* Necesario para que el sticky footer funcione en todas las vistas:
+   el RouterView renderiza el page-layout directamente, que necesita
+   ocupar al menos todo el alto del viewport. */
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 </style>

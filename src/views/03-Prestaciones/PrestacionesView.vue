@@ -1,4 +1,5 @@
 <template>
+	<div class="page-layout">
 	<!-- TOP BAR 1: Logos institucionales -->
 	<div class="sigem-topbar1">
 		<div class="sigem-topbar1-center">
@@ -217,6 +218,7 @@
 			</div>
 		</div>
 	</footer>
+	</div>
 </template>
 
 <script setup>
@@ -325,14 +327,36 @@ onMounted(async () => {
 
 async function cargarDesdeServidor(proyectoId) {
 	try {
-		const url = `${import.meta.env.VITE_API_BASE}/get_prestaciones_demanda.php?proyecto_id=${proyectoId}`
-		const resp = await fetch(url)
+		// Cargar en paralelo: datos del proyecto + lista base de prestaciones (para obtener tiempo_procedimiento)
+		const [resp, respPrestacionesBase] = await Promise.all([
+			fetch(`${import.meta.env.VITE_API_BASE}/get_prestaciones_demanda.php?proyecto_id=${proyectoId}`),
+			fetch(`${import.meta.env.VITE_API_BASE}/get_prestaciones.php`),
+		])
 		const json = await resp.json()
+		const jsonBase = await respPrestacionesBase.json()
 
 		if (!resp.ok || !json.ok) {
 			alert(json.error || 'Error al cargar datos del proyecto.')
 			return
 		}
+
+		// Construir mapa de tiempo_procedimiento base (desde la tabla de prestaciones)
+		const tiempoMap = new Map()
+		if (jsonBase?.ok && Array.isArray(jsonBase?.datos)) {
+			for (const p of jsonBase.datos) {
+				if (p.id_prestacion != null && p.tiempo_procedimiento != null) {
+					tiempoMap.set(p.id_prestacion, p.tiempo_procedimiento)
+				}
+			}
+		}
+
+		// Recuperar los overrides de tiempo_procedimiento que el usuario guardó previamente para este proyecto
+		// Prioridad: override del usuario > valor base de tabla > 60
+		let tpOverrides = {}
+		try {
+			const rawOverrides = localStorage.getItem(`ephdem_tp_overrides_${proyectoId}`)
+			if (rawOverrides) tpOverrides = JSON.parse(rawOverrides)
+		} catch (_) { /* si falla el parse, ignorar */ }
 
 		const idsGuardados = new Set(json.datos.map((item) => item.id_prestacion))
 		seleccionadas.value = prestaciones.value.filter((p) => idsGuardados.has(p.id))
@@ -343,7 +367,8 @@ async function cargarDesdeServidor(proyectoId) {
 			diasAnuales: item.valores?.dias_laborales ?? item.defaults?.dias_laborales ?? 365,
 			disponibilidad: item.valores ? (item.valores.disponibilidad * 100) : (item.defaults?.disponibilidad ? item.defaults.disponibilidad * 100 : 100),
 			jornadaLaboral: item.valores?.jornada_efectiva ?? item.defaults?.jornada_efectiva ?? 24,
-			tiempoProcedimiento: item.valores?.tiempo_procedimiento ?? item.defaults?.tiempo_procedimiento ?? item.tiempo_procedimiento ?? 60
+			// Si el usuario ya modificó este valor previamente, conservarlo; si no, usar el de la tabla base
+			tiempoProcedimiento: tpOverrides[item.id_prestacion] ?? tiempoMap.get(item.id_prestacion) ?? 60
 		}))
 		localStorage.setItem('ephdem_parametros_prestaciones', JSON.stringify(params))
 		localStorage.setItem('ephdem_origen_edicion', 'prestaciones')
@@ -567,8 +592,15 @@ function cerrarSesion() {
 }
 
 // --- CONTENIDO ---
+.page-layout {
+	min-height: 100vh;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
 .prestaciones-page {
 	background: $color-fondo;
+	flex: 1;
 }
 .prestaciones-content {
 	max-width: 1200px;

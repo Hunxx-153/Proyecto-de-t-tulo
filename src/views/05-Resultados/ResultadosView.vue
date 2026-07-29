@@ -1,4 +1,5 @@
 <template>
+	<div class="page-layout">
 	<!-- TOP BAR 1: Logos institucionales -->
 	<div class="sigem-topbar1">
 		<div class="sigem-topbar1-center">
@@ -117,13 +118,6 @@
 				<div class="filtro filtro-buscar">
 					<label>Buscar equipo</label>
 					<input v-model="filtros.texto" type="text" placeholder="Nombre de equipo" />
-				</div>
-				<div class="filtro">
-					<label>Recinto</label>
-					<select v-model="filtros.recinto">
-						<option value="">Todos</option>
-						<option v-for="recinto in opcionesRecinto" :key="recinto" :value="recinto">{{ recinto }}</option>
-					</select>
 				</div>
 			</section>
 
@@ -398,6 +392,7 @@
 			</div>
 		</div>
 	</footer>
+	</div>
 </template>
 
 <script setup>
@@ -822,12 +817,23 @@ function exportarPdf() {
 	margin: 0;
 }
 
+.page-layout {
+	min-height: 100vh;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
 .resultados-page {
 	background: $color-fondo;
+	flex: 1;
+}
+// Anular el margin-top del footer global para que quede pegado al fondo
+.sigem-bottomline {
+	margin-top: 0;
 }
 .resultados-content {
 	max-width: 1480px;
-	margin: 32px auto 72px auto;
+	margin: 32px auto 48px auto;
 	padding: 0 20px;
 	display: flex;
 	flex-direction: column;

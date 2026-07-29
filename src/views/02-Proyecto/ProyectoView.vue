@@ -1,4 +1,5 @@
 <template>
+  <div class="page-layout">
   <!-- TOP BAR 1: Logos institucionales -->
   <div class="sigem-topbar1">
     <div class="sigem-topbar1-center">
@@ -151,6 +152,7 @@
       </div>
     </div>
   </footer>
+  </div>
 </template>
 
 <script setup>
@@ -347,8 +349,15 @@ function cerrarSesion() {
 }
 
 // --- CONTENIDO ---
+.page-layout {
+  min-height: 100vh;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
 .proyectos-page {
   background: $color-fondo;
+  flex: 1;
 }
 .proyectos-content {
   max-width: 1100px;
